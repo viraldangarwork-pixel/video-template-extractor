@@ -44,6 +44,13 @@ def test_typewriter_prefix_growth_is_one_track_with_full_text():
     assert len(tr) == 1 and tr[0]["text"] == "SALE" and tr[0]["box"] == list(boxes[-1])
 
 
+def test_typewriter_partial_prefix_majority_still_gives_full_text():
+    box = (0.40, 0.4, 0.2, 0.08)
+    rows = [[det(t, box)] for t in ["S", "SA", "SAL", "SAL", "SAL", "SALE"]]
+    tr = build_tracks(samples(rows), STEP)
+    assert len(tr) == 1 and tr[0]["text"] == "SALE"
+
+
 def test_ocr_noise_votes_and_short_blips_dropped():
     rows = [[det("WAIT FOR IT", A)], [det("WAIT F0R IT", A)], [det("WAIT FOR IT", A)], [det("X", B)]]
     tr = build_tracks(samples(rows), STEP)

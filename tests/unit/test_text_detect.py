@@ -16,6 +16,17 @@ def test_ocr_reads_rendered_text():
     assert x < 80 and w > img.shape[1] * 0.6 and all(isinstance(v, int) for v in best["box"])
 
 
+def test_ocr_box_clamped_to_image_when_text_is_cut_off():
+    img = text_crop("WAIT FOR IT", "Montserrat-Bold", 64, (255, 255, 255), stroke=((0, 0, 0), 4))
+    cut = img[:-55, :-100]                       # text runs off the right and bottom edges
+    dets = detect.ocr(cut)
+    assert dets
+    for d in dets:
+        x, y, w, h = d["box"]
+        assert x >= 0 and y >= 0 and w > 0 and h > 0
+        assert x + w <= cut.shape[1] and y + h <= cut.shape[0], (d, cut.shape)
+
+
 def test_to_norm():
     assert detect.to_norm([54, 96, 270, 48], 540, 960) == [0.1, 0.1, 0.5, 0.05]
 
@@ -34,3 +45,5 @@ def test_detect_samples_on_fixture(tmp_path, text_video_basic):
         assert any(fuzz.ratio(t, want) >= 80 for t in texts), (want, texts)
     for d in late["dets"]:
         assert all(0 <= v <= 1 for v in d["box"]) and d["score"] >= detect.MIN_SCORE
+        x, y, w, h = d["box"]
+        assert x + w <= 1 and y + h <= 1

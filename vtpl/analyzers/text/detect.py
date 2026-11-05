@@ -24,14 +24,16 @@ def ocr(img_bgr: np.ndarray) -> list[dict]:
     """[{box: [x, y, w, h] int px, text, score}] for one BGR image."""
     padded = cv2.copyMakeBorder(img_bgr, PAD, PAD, PAD, PAD, cv2.BORDER_REPLICATE)
     result, _ = _engine()(padded)
+    ih, iw = img_bgr.shape[:2]
     out = []
     for quad, text, score in result or []:
         xs, ys = [p[0] - PAD for p in quad], [p[1] - PAD for p in quad]
         x0, y0 = max(0, min(xs)), max(0, min(ys))
+        x1, y1 = min(max(xs), iw), min(max(ys), ih)   # text cut off by the edge runs into the padding
         text = text.strip()
-        if text:
-            out.append({"box": [round(x0), round(y0), round(max(xs) - x0), round(max(ys) - y0)],
-                        "text": text, "score": float(score)})
+        if text and x1 > x0 and y1 > y0:
+            x0, y0, x1, y1 = round(x0), round(y0), round(x1), round(y1)
+            out.append({"box": [x0, y0, x1 - x0, y1 - y0], "text": text, "score": float(score)})
     return out
 
 

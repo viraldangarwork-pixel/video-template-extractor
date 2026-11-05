@@ -57,6 +57,9 @@ def _match(last: dict, d: dict) -> float:
 def _summarise(obs: list[dict]) -> dict:
     counts = Counter(o["text"] for o in obs)
     text = max(counts, key=lambda t: (counts[t], len(t)))
+    longest = max(counts, key=len)
+    if all(is_prefix(t, longest) for t in counts):     # typewriter: a partial prefix may win the vote
+        text = longest
     boxes = np.array([o["box"] for o in obs if o["text"] == text])
     return {"text": text, "start_ms": obs[0]["t_ms"], "end_ms": obs[-1]["t_ms"],
             "box": [float(v) for v in np.median(boxes, axis=0)], "obs": obs}

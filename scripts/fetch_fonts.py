@@ -45,7 +45,7 @@ def normalize_names(path: Path, weight: int) -> None:
     """Fontsource's static instances of variable fonts keep the default instance's names
     (e.g. 'Montserrat Thin' for the Bold file). Rewrite them to '<Family>' + Regular/Bold so
     libass/fontconfig and Pillow agree and the family is the plain name."""
-    font = TTFont(path)
+    font = TTFont(path, recalcTimestamp=False)     # byte-identical on re-runs
     names = font["name"]
     family = names.getBestFamilyName() or ""
     prev = None
@@ -74,7 +74,7 @@ def main() -> int:
         try:
             if not path.exists():
                 urllib.request.urlretrieve(URL.format(slug=slug, weight=weight), path)
-                normalize_names(path, weight)
+            normalize_names(path, weight)                     # idempotent; also fixes older downloads
             family = ImageFont.truetype(str(path), 40).getname()[0]
         except Exception as e:
             failed.append(f"{font_id}: {e}")
