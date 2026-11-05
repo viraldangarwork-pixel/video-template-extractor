@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import NoReturn
 
 import typer
 
@@ -12,9 +13,13 @@ from vtpl.util.ffmpeg import FFmpegError, require_ffmpeg
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Video template extractor")
 
 
-def _fail(msg: str) -> None:
+def _fail(msg: str) -> NoReturn:
     typer.echo(f"Error: {msg}")
     raise typer.Exit(1)
+
+
+def _os_message(e: OSError) -> str:
+    return f"{e.strerror}: {e.filename}" if e.strerror and e.filename else str(e)
 
 
 @app.command()
@@ -34,7 +39,15 @@ def analyze(
         template = run_analyze(video, out, force, only)
     except (FFmpegError, TemplateError, ValueError) as e:
         _fail(str(e))
-    typer.echo(f"Template written: {template}")
+    except OSError as e:
+        msg = _os_message(e)
+        if isinstance(e, FileNotFoundError) and e.filename and Path(e.filename).name == "meta.json":
+            msg += " (run the ingest stage first)"
+        _fail(msg)
+    if template.exists():
+        typer.echo(f"Template written: {template}")
+    else:
+        typer.echo("Analysis done; template.json not written (merge stage not run)")
 
 
 @app.command()
@@ -47,8 +60,10 @@ def render(
     """Render TEMPLATE with your own media."""
     try:
         warnings = run_render(template, media, out, snap_to_beats=snap_to_beats)
-    except (FFmpegError, TemplateError, MediaError) as e:
+    except (FFmpegError, TemplateError, MediaError, ValueError) as e:
         _fail(str(e))
+    except OSError as e:
+        _fail(_os_message(e))
     for w in warnings:
         typer.echo(f"Warning: {w}")
     typer.echo(f"Rendered: {out}")
