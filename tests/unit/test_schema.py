@@ -66,3 +66,23 @@ def test_clamp_transitions():
     shots[1]["transition_in"] = {"type": "fade", "duration_ms": 0}
     clamp_transitions(shots)
     assert shots[1]["transition_in"] == {"type": "cut", "duration_ms": 0}
+
+
+TEXT = {"id": "t1", "slot": "text_1", "sample": "HI", "kind": "overlay", "start_ms": 100, "end_ms": 900,
+        "box": {"x": 0.1, "y": 0.5, "w": 0.3, "h": 0.05},
+        "style": {"font": "Montserrat-Bold", "font_confidence": 0.9, "size_px": 80, "color": "#FFFFFF",
+                  "stroke": None, "shadow": False},
+        "anim": {"in": "fade", "in_ms": 200, "out": "none", "out_ms": 0}}
+
+
+def test_text_item_valid_and_errors():
+    t = copy.deepcopy(GOOD)
+    t["texts"] = [copy.deepcopy(TEXT)]
+    validate(t)
+    t["texts"][0]["anim"]["in"] = "spin"
+    with pytest.raises(TemplateError, match="texts/0/anim/in"):
+        validate(t)
+    t["texts"][0]["anim"]["in"] = "fade"
+    t["texts"][0]["end_ms"] = 5000
+    with pytest.raises(TemplateError, match=r"texts\[0\] must lie within"):
+        validate(t)

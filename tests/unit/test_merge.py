@@ -34,7 +34,7 @@ def test_run_reads_workdir(tmp_path):
     wd.write_json("meta.json", META)
     wd.write_json("shots.json", SHOTS)
     wd.write_json("audio.json", AUDIO)
-    assert merge.run(wd, tmp_path / "v.mp4") == ["speech.json missing: no captions"]
+    assert merge.run(wd, tmp_path / "v.mp4") == ["speech.json missing: no captions", "text.json missing: no text overlays"]
     assert wd.read_json("template.json")["meta"]["source_id"] == "abc123abc123"
 
 
