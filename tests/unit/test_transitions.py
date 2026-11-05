@@ -72,3 +72,16 @@ def test_flash_within_same_shot_ignored():
     white = np.ones(3, dtype=np.float32)
     frames = np.concatenate([solid(GREEN, 30), solid(white, 2), solid(GREEN, 30)])
     assert find_flashes(luma(frames), frames) == []
+
+
+def test_long_dissolve_bracketed_by_detector_cuts_is_one_dissolve():
+    frames = np.concatenate([solid(RED, 30), blend(RED, BLUE, 25), solid(BLUE, 30)])
+    b = classify_boundaries([30, 54], frames, luma(frames))
+    assert [x["type"] for x in b] == ["dissolve"]
+    assert 22 <= b[0]["duration_frames"] <= 25
+
+
+def test_very_long_dissolve_without_detector_cuts_is_one_dissolve():
+    frames = np.concatenate([solid(RED, 30), blend(RED, BLUE, 40), solid(BLUE, 30)])
+    b = classify_boundaries([], frames, luma(frames))
+    assert [x["type"] for x in b] == ["dissolve"]

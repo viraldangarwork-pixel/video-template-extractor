@@ -17,7 +17,11 @@ def detect_cuts(video: Path, threshold: float = 3.0, min_scene_len: int = 8) -> 
     sm = SceneManager()
     sm.add_detector(AdaptiveDetector(adaptive_threshold=threshold, min_scene_len=min_scene_len))
     sm.detect_scenes(v)
-    return [start.get_frames() for start, _ in sm.get_scene_list()[1:]]
+    out = []
+    for start, _ in sm.get_scene_list()[1:]:
+        n = getattr(start, "frame_num", None)          # scenedetect >= 0.7
+        out.append(int(n) if n is not None else start.get_frames())
+    return out
 
 
 def build_shots(bounds: list[dict], duration_ms: int, fps: float) -> list[dict]:

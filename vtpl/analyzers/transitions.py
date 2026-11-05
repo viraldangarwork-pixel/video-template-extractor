@@ -94,14 +94,30 @@ def dissolve_span(frames: np.ndarray, c: int, max_half: int = 12, res_thr: float
     return best
 
 
-def _dissolve(frames: np.ndarray, c: int) -> tuple[int, int] | None:
-    """dissolve_span, re-fitted around the span's midpoint: detectors often flag a dissolve's
-    first frame, and a window centred there truncates the far end of the blend."""
+def _dissolve(frames: np.ndarray, c: int, max_iter: int = 3) -> tuple[int, int] | None:
+    """dissolve_span, re-fitted around the span's midpoint until it stops growing: detectors
+    often flag a dissolve's first frame, and a window centred there truncates the blend."""
     span = dissolve_span(frames, c)
     if span is None:
         return None
-    again = dissolve_span(frames, (span[0] + span[1] + 1) // 2)
-    return again if again and again[1] - again[0] > span[1] - span[0] else span
+    for _ in range(max_iter):
+        again = dissolve_span(frames, (span[0] + span[1] + 1) // 2)
+        if not again or again[1] - again[0] <= span[1] - span[0]:
+            break
+        span = again
+    return span
+
+
+def _merge_dissolves(bounds: list[dict]) -> list[dict]:
+    """Merge dissolves whose spans overlap or lie within PAD frames; other types pass through."""
+    others = [x for x in bounds if x["type"] != "dissolve"]
+    merged: list[dict] = []
+    for d in sorted((x for x in bounds if x["type"] == "dissolve"), key=lambda x: x["span"][0]):
+        if merged and d["span"][0] <= merged[-1]["span"][1] + PAD:
+            prev = merged.pop()
+            d = _boundary("dissolve", prev["span"][0], max(prev["span"][1], d["span"][1]))
+        merged.append(d)
+    return others + merged
 
 
 def long_range_diff(frames: np.ndarray, k: int = 6) -> np.ndarray:
@@ -135,4 +151,4 @@ def classify_boundaries(cut_frames: list[int], frames: np.ndarray, luma: np.ndar
         span = _dissolve(frames, c)
         if span:
             out.append(_boundary("dissolve", *span))
-    return sorted(out, key=lambda x: x["frame"])
+    return sorted(_merge_dissolves(out), key=lambda x: x["frame"])
