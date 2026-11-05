@@ -79,13 +79,16 @@ def _side_cover(base: np.ndarray, m: np.ndarray, d: int = 2) -> tuple[float, flo
     return covers[0], covers[1]
 
 
-def _ring_px(fill: np.ndarray, m: np.ndarray, max_r: int = 12) -> int:
+def _ring_px(fill: np.ndarray, m: np.ndarray, max_r: int = 12, blend: int = 1) -> int:
+    """Outer radius of the band of rings around `fill` that `m` covers. Up to `blend` leading rings
+    may be uncovered: in encoded video chroma subsampling leaves a fill/stroke blend ring."""
     px = 0
     for r in range(1, max_r + 1):
         ring = _dilate(fill, r) & ~_dilate(fill, r - 1)
-        if not ring.any() or (ring & m).sum() / ring.sum() < 0.5:
+        if ring.any() and (ring & m).sum() / ring.sum() >= 0.5:
+            px = r
+        elif px or r > blend or not ring.any():
             break
-        px = r
     return px
 
 

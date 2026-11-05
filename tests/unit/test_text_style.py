@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import pytest
 
@@ -30,6 +31,31 @@ def test_red_fill_white_stroke():
     s = analyze_style(text_crop("SALE", "BebasNeue-Regular", 160, (230, 30, 60), stroke=((255, 255, 255), 4)))
     assert close(hex_from_bgr(s.color_bgr), "#E61E3C")
     assert s.stroke_bgr is not None and close(hex_from_bgr(s.stroke_bgr), "#FFFFFF")
+
+
+def yuv420(img):
+    """Simulate H.264 4:2:0 chroma subsampling: colour edges blur over ~2 px."""
+    ycc = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    h, w = ycc.shape[:2]
+    half = cv2.resize(ycc[:, :, 1:], (w // 2, h // 2), interpolation=cv2.INTER_AREA)
+    ycc[:, :, 1:] = cv2.resize(half, (w, h), interpolation=cv2.INTER_LINEAR)
+    return cv2.cvtColor(ycc, cv2.COLOR_YCrCb2BGR)
+
+
+def test_stroke_found_behind_a_chroma_blend_ring():
+    # In encoded video a 1 px red/white blend ring separates the fill from its stroke.
+    crop = yuv420(text_crop("SALE", "BebasNeue-Regular", 160, (230, 30, 60), stroke=((255, 255, 255), 4)))
+    s = analyze_style(crop)
+    assert close(hex_from_bgr(s.color_bgr), "#E61E3C")
+    assert s.stroke_bgr is not None and close(hex_from_bgr(s.stroke_bgr), "#FFFFFF") and 3 <= s.stroke_px <= 6
+    assert not s.shadow
+
+
+def test_encoded_shadow_and_plain_text_get_no_stroke():
+    # The blend-ring tolerance must not turn a shadow or edge blending into a stroke.
+    assert analyze_style(yuv420(text_crop("DAY 1", "Anton-Regular", 110, (255, 214, 0), shadow=True))).stroke_bgr is None
+    s = analyze_style(yuv420(text_crop("hello", "Poppins-Regular", 90, (255, 255, 255))))
+    assert s.stroke_bgr is None and not s.shadow
 
 
 def test_plain_text_has_no_stroke_from_antialiasing():
