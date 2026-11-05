@@ -63,3 +63,28 @@ def test_hard_cuts_do_not_drift(tmp_path):
     assert len(cuts_ms) == n - 1
     for i, got in enumerate(cuts_ms, start=1):
         assert abs(got - i * length) <= 34, f"cut {i} at {got:.0f} ms, template says {i * length} ms"
+
+
+def test_cut_between_landscape_and_portrait_clips(tmp_path):
+    import copy
+
+    from tests.synth.make_fixtures import _ff
+    from tests.unit.test_schema import GOOD
+    t = copy.deepcopy(GOOD)
+    t["shots"] = [{"id": f"s{i + 1}", "start_ms": i * 1000, "end_ms": (i + 1) * 1000, "slot": f"clip_{i + 1}",
+                   "on_beat": False, "transition_in": {"type": "cut", "duration_ms": 0}} for i in range(2)]
+    t["meta"]["duration_ms"] = 2000
+    t["audio"]["beat_pattern"] = [2, 2]
+    t["captions"]["words"] = []
+    tpl = tmp_path / "template.json"
+    tpl.write_text(json.dumps(t))
+    media = tmp_path / "mine"
+    media.mkdir()
+    _ff(["-f", "lavfi", "-i", "color=c=cyan:s=1920x1080:r=30:d=3",
+         "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", str(media / "clip_1.mp4")])
+    solid_clip(media / "clip_2.mp4", "magenta")
+    out = tmp_path / "out.mp4"
+    render(tpl, media, out)
+    v = next(s for s in probe(out)["streams"] if s["codec_type"] == "video")
+    assert (v["width"], v["height"]) == (1080, 1920)
+    assert v.get("sample_aspect_ratio", "1:1") == "1:1"

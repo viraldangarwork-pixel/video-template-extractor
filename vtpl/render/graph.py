@@ -55,7 +55,7 @@ def _f(n: int) -> str:
 def build_filter(segs: list[Segment], has_music: bool, duration_ms: int) -> str:
     parts = [
         f"[{i}:v]setpts=PTS-STARTPTS,"
-        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},"
+        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={FPS},"
         f"trim=end_frame={seg.length_frames},setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s{i}]"
         for i, seg in enumerate(segs)
     ]

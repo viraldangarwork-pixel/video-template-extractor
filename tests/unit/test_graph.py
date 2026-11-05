@@ -33,7 +33,8 @@ def test_trim_start_centres_clip():
 def test_build_filter():
     f = build_filter(plan_segments(T), has_music=True, duration_ms=4000)
     assert "[0:v]setpts=PTS-STARTPTS,scale=" in f and "trim=start" not in f
-    assert "fps=30,trim=end_frame=36,setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s0]" in f
+    assert ("scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,"
+            "fps=30,trim=end_frame=36,setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s0]") in f
     assert "trim=end_frame=51," in f and "trim=end_frame=45," in f
     assert "[s0][s1]xfade=transition=fade:duration=0.400000:offset=0.800000[j1]" in f
     assert "[j1][s2]concat=n=2:v=1:a=0[j2]" in f
