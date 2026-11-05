@@ -65,5 +65,6 @@ def resolve_media(template: dict, media_dir: Path) -> Media:
     if music is None:
         warnings.append("No music file found; output will be silent")
 
-    texts = {k: "" if v is None else str(v) for k, v in cfg.items() if str(k).startswith("text_")}
+    texts = {k: "" if v is None else str(v) for k, v in cfg.items()
+             if str(k).startswith("text_") or k == "captions"}
     return Media(clips, music, texts, warnings)

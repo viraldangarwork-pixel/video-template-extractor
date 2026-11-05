@@ -72,3 +72,10 @@ def test_invalid_yaml_is_media_error(tmp_path):
     (tmp_path / "texts.yaml").write_text("clips: [unclosed")
     with pytest.raises(MediaError, match="texts.yaml is not valid YAML"):
         resolve_media(T, tmp_path)
+
+
+def test_captions_key_is_kept(tmp_path):
+    touch(tmp_path / "clip_1.mp4")
+    (tmp_path / "texts.yaml").write_text("captions: new words here\ntext_1: HI\nother: x\n")
+    media = resolve_media({"shots": [{"slot": "clip_1"}]}, tmp_path)
+    assert media.texts == {"captions": "new words here", "text_1": "HI"}
