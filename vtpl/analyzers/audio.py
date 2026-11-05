@@ -1,11 +1,14 @@
 import bisect
+import tempfile
 from pathlib import Path
 
 import numpy as np
 
+from vtpl.util.ffmpeg import run_ffmpeg
 from vtpl.util.workdir import WorkDir
 
 OUTPUT = "audio.json"
+SR = 22050
 HOP = 256  # finer than librosa default 512: tempo is quantised by frame hop
 EMPTY = {"bpm": None, "beats_ms": [], "downbeat_hint_ms": []}
 
@@ -39,9 +42,13 @@ def beat_pattern(shots: list[dict], period_ms: float) -> list[int]:
 
 
 def beats_of_file(path: Path) -> dict:
+    """Beat-track any audio FFmpeg can decode (mp3, m4a/aac, wav, ...) via a temporary mono WAV."""
     import librosa
 
-    y, sr = librosa.load(str(path), sr=22050, mono=True)
+    with tempfile.TemporaryDirectory(prefix="vtpl-") as tmp:
+        wav = Path(tmp) / "music.wav"
+        run_ffmpeg(["-i", str(path), "-vn", "-ac", "1", "-ar", str(SR), str(wav)])
+        y, sr = librosa.load(str(wav), sr=SR, mono=True)
     return analyze_beats(y, sr)
 
 

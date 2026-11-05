@@ -1,3 +1,5 @@
+import pytest
+
 from vtpl.analyzers.audio import analyze_beats, beat_pattern, is_on_beat
 from tests.synth.make_fixtures import click_signal
 
@@ -28,3 +30,20 @@ def test_beat_pattern():
     shots = [{"start_ms": 0, "end_ms": 1000}, {"start_ms": 1000, "end_ms": 1200},
              {"start_ms": 1200, "end_ms": 3200}]
     assert beat_pattern(shots, period_ms=500) == [2, 1, 4]
+
+
+@pytest.mark.slow
+def test_beats_of_file_reads_aac_m4a(tmp_path, monkeypatch):
+    import tempfile
+
+    from tests.synth.make_fixtures import _ff, click_track
+    from vtpl.analyzers.audio import beats_of_file
+    wav, m4a = tmp_path / "click.wav", tmp_path / "music.m4a"
+    click_track(wav, seconds=8.0, bpm=120.0)
+    _ff(["-i", str(wav), "-c:a", "aac", "-b:a", "128k", str(m4a)])
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(scratch))
+    res = beats_of_file(m4a)
+    assert res["bpm"] is not None and abs(res["bpm"] - 120.0) <= 2.0
+    assert list(scratch.iterdir()) == []            # temporary WAV cleaned up
