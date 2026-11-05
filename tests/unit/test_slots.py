@@ -66,3 +66,9 @@ def test_empty_text_values_become_empty_strings(tmp_path):
     (tmp_path / "texts.yaml").write_text("text_1:\ntext_2: ''\ntext_3: 42\n")
     media = resolve_media({"shots": [{"slot": "clip_1"}]}, tmp_path)
     assert media.texts == {"text_1": "", "text_2": "", "text_3": "42"}
+
+
+def test_invalid_yaml_is_media_error(tmp_path):
+    (tmp_path / "texts.yaml").write_text("clips: [unclosed")
+    with pytest.raises(MediaError, match="texts.yaml is not valid YAML"):
+        resolve_media(T, tmp_path)

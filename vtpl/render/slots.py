@@ -35,7 +35,10 @@ def _file_name(value, where: str) -> str:
 def resolve_media(template: dict, media_dir: Path) -> Media:
     media_dir = Path(media_dir)
     cfg_path = media_dir / "texts.yaml"
-    cfg = (yaml.safe_load(cfg_path.read_text()) or {}) if cfg_path.exists() else {}
+    try:
+        cfg = (yaml.safe_load(cfg_path.read_text()) or {}) if cfg_path.exists() else {}
+    except yaml.YAMLError as e:
+        raise MediaError(f"texts.yaml is not valid YAML: {e}") from e
     if not isinstance(cfg, dict):
         raise MediaError(f"texts.yaml must be a mapping (clips:, music:, text_N: keys), got a {type(cfg).__name__}")
     mapping = cfg.get("clips") or {}
