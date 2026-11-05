@@ -41,3 +41,11 @@ def transitions_video(fixtures_dir):
     _need_ffmpeg()
     path = fixtures_dir / "transitions.mp4"
     return {"path": path, "truth": mf.transitions(path)}
+
+
+@pytest.fixture(scope="session")
+def text_video_basic(fixtures_dir):
+    _need_ffmpeg()
+    from tests.synth.text_fixtures import BASIC_ITEMS, text_video
+    path = fixtures_dir / "text_basic.mp4"
+    return {"path": path, "truth": text_video(path, BASIC_ITEMS, 4.0)}
