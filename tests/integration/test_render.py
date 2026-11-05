@@ -88,3 +88,27 @@ def test_cut_between_landscape_and_portrait_clips(tmp_path):
     v = next(s for s in probe(out)["streams"] if s["codec_type"] == "video")
     assert (v["width"], v["height"]) == (1080, 1920)
     assert v.get("sample_aspect_ratio", "1:1") == "1:1"
+
+
+def test_snapped_cuts_land_on_off_grid_beats(tmp_path):
+    import copy
+
+    from tests.unit.test_schema import GOOD
+    from vtpl.pipeline import analyze
+    t = copy.deepcopy(GOOD)
+    t["shots"] = [{"id": f"s{i + 1}", "start_ms": i * 1000, "end_ms": (i + 1) * 1000, "slot": f"clip_{i + 1}",
+                   "on_beat": False, "transition_in": {"type": "cut", "duration_ms": 0}} for i in range(3)]
+    t["meta"]["duration_ms"] = 3000
+    t["audio"]["beat_pattern"] = [4, 4, 2]
+    tpl = tmp_path / "template.json"
+    tpl.write_text(json.dumps(t))
+    media = tmp_path / "mine"
+    media.mkdir()
+    for i, c in enumerate(["cyan", "magenta", "cyan"]):
+        solid_clip(media / f"clip_{i + 1}.mp4", c, seconds=6.0)
+    click_track(media / "music.wav", seconds=10.0, bpm=120.0, first_s=0.25)    # beats at 250 + k*500 ms
+    out = tmp_path / "out.mp4"
+    render(tpl, media, out, snap_to_beats=True)
+    got = json.loads(analyze(out, tmp_path / "work", only={"ingest", "shots", "audio", "merge"}).read_text())
+    assert len(got["shots"]) == 3
+    assert all(s["on_beat"] for s in got["shots"][1:]), [(s["start_ms"], s["on_beat"]) for s in got["shots"]]

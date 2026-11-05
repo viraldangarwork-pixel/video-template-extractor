@@ -4,8 +4,12 @@ from vtpl.schema import TemplateError
 from vtpl.timeline import clamp_transitions
 
 
-def snap_template(template: dict, new_bpm: float) -> dict:
-    """Re-time shots to beat_pattern at new_bpm; warp captions and texts with them."""
+def snap_template(template: dict, new_bpm: float, first_beat_ms: int = 0) -> dict:
+    """Re-time shots to beat_pattern at new_bpm; warp captions and texts with them.
+
+    Cuts land on the music's beat grid (first_beat_ms + k * period). The music still starts at 0,
+    so shot 0 runs from 0 to the first grid beat after its pattern length.
+    """
     t = copy.deepcopy(template)
     pattern = t["audio"]["beat_pattern"]
     if not pattern:
@@ -13,10 +17,15 @@ def snap_template(template: dict, new_bpm: float) -> dict:
     if len(pattern) != len(t["shots"]):
         raise TemplateError(f"beat_pattern has {len(pattern)} entries but template has {len(t['shots'])} shots")
     period = 60000.0 / new_bpm
+    phase = first_beat_ms % period
+    first_end = phase + pattern[0] * period
+    if first_end <= 0:
+        first_end += period
     old = [(s["start_ms"], s["end_ms"]) for s in t["shots"]]
-    new, start = [], 0
-    for n in pattern:
-        end = int(round(start + n * period))
+    new, start, beats = [], 0, 0
+    for i, n in enumerate(pattern):
+        beats += n if i else 0
+        end = int(round(first_end + beats * period))     # from the grid, so rounding never accumulates
         new.append((start, end))
         start = end
 

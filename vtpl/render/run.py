@@ -18,10 +18,10 @@ def render(template_path: Path, media_dir: Path, out: Path, snap_to_beats: bool 
     if snap_to_beats:
         if media.music is None:
             raise MediaError("--snap-to-beats needs a music file in the media folder")
-        bpm = beats_of_file(media.music)["bpm"]
-        if bpm is None:
+        beats = beats_of_file(media.music)
+        if beats["bpm"] is None:
             raise MediaError(f"No beats found in {media.music.name}; render without --snap-to-beats")
-        template = snap_template(template, bpm)
+        template = snap_template(template, beats["bpm"], first_beat_ms=beats["beats_ms"][0])
         validate(template)
 
     segs = plan_segments(template)

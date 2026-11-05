@@ -27,8 +27,8 @@ def click_signal(seconds: float, bpm: float = 120.0, sr: int = 22050, first_s: f
     return y, sr, beats
 
 
-def click_track(path: Path, seconds: float, bpm: float = 120.0) -> list[int]:
-    y, sr, beats = click_signal(seconds, bpm)
+def click_track(path: Path, seconds: float, bpm: float = 120.0, first_s: float = 0.5) -> list[int]:
+    y, sr, beats = click_signal(seconds, bpm, first_s=first_s)
     sf.write(path, y, sr)
     return beats
 
