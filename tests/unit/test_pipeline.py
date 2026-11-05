@@ -3,7 +3,7 @@ import pytest
 from vtpl.pipeline import STAGE_NAMES, Stage, analyze
 
 
-def _stages(calls, fail=None):
+def _stages(calls, fail=None, with_shots=False):
     def make(name, output):
         def fn(wd, source):
             calls.append(name)
@@ -12,7 +12,8 @@ def _stages(calls, fail=None):
             wd.write_json(output, {"ok": True})
             return [f"{name} warn"] if name == "audio" else []
         return Stage(name, output, fn)
-    return [make("ingest", "meta.json"), make("audio", "audio.json"), make("merge", "template.json")]
+    shots = [make("shots", "shots.json")] if with_shots else []
+    return [make("ingest", "meta.json"), *shots, make("audio", "audio.json"), make("merge", "template.json")]
 
 
 def test_default_stage_order():
@@ -70,3 +71,13 @@ def test_only_stage_triggers_merge(tmp_path):
     del calls[:]
     analyze(src, tmp_path / "work", force=True, only={"audio"}, stages=_stages(calls))
     assert calls == ["audio", "merge"]
+
+
+def test_forced_merge_skipped_until_its_inputs_exist(tmp_path):
+    src = tmp_path / "v.mp4"
+    src.write_bytes(b"video")
+    calls = []
+    out = analyze(src, tmp_path / "work", only={"ingest"}, stages=_stages(calls, with_shots=True))
+    assert calls == ["ingest"] and not out.exists()                    # no shots.json yet: merge skipped
+    analyze(src, tmp_path / "work", only={"shots"}, stages=_stages(calls, with_shots=True))
+    assert calls == ["ingest", "shots", "merge"] and out.exists()

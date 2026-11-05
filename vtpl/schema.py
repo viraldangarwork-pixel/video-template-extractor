@@ -69,7 +69,7 @@ class TemplateError(ValueError):
 
 def check_timeline(t: dict) -> None:
     shots, dur, fps = t["shots"], t["meta"]["duration_ms"], t["meta"]["fps"]
-    frame_ms = math.ceil(1000 / fps)
+    frame_ms = math.floor(1000 / fps)     # a frame-rounded one-frame shot at 30 fps is 33 ms
     if shots[0]["start_ms"] != 0:
         raise TemplateError("shots[0].start_ms must be 0")
     for i, s in enumerate(shots):

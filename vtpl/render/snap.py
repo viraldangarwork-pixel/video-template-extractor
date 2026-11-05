@@ -4,6 +4,19 @@ from vtpl.schema import TemplateError
 from vtpl.timeline import clamp_transitions
 
 
+def beat_phase_ms(beats_ms: list[int], period_ms: float, tol_ms: float = 40.0) -> int:
+    """Phase of the beat grid (0 <= phase < period): the candidate b % period that the most beats
+    agree with to within tol_ms, measured circularly so jitter around the wrap point still counts.
+    Robust to a missed first beat or a stray onset, unlike taking beats_ms[0]."""
+    if not beats_ms:
+        return 0
+    cands = [b % period_ms for b in beats_ms]
+
+    def support(p: float) -> int:
+        return sum(min((c - p) % period_ms, (p - c) % period_ms) <= tol_ms for c in cands)
+    return int(round(max(cands, key=support))) % int(round(period_ms))
+
+
 def snap_template(template: dict, new_bpm: float, first_beat_ms: int = 0) -> dict:
     """Re-time shots to beat_pattern at new_bpm; warp captions and texts with them.
 

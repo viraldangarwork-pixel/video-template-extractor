@@ -54,7 +54,7 @@ def test_render_reports_invalid_json(tmp_path):
     tpl = tmp_path / "t.json"
     tpl.write_text("{not json")
     r = runner.invoke(cli.app, ["render", str(tpl), "--media", str(tmp_path)])
-    _clean_failure(r, "Error:")
+    _clean_failure(r, "Error: t.json is not valid JSON: Expecting property name")
 
 
 def test_render_reports_os_error(tmp_path, monkeypatch):
@@ -114,3 +114,23 @@ def test_analyze_reports_written_template(tmp_path, monkeypatch):
 def test_fail_is_annotated_noreturn():
     import typing
     assert typing.get_type_hints(cli._fail)["return"] is typing.NoReturn
+
+
+def test_analyze_ingest_only_on_fresh_dir(tmp_path, monkeypatch):
+    from vtpl import pipeline
+    v = tmp_path / "v.mp4"
+    v.write_bytes(b"x")
+
+    def stage(name, output, needs=()):
+        def fn(wd, source):
+            for n in needs:
+                wd.read_json(n)                                         # like the real merge
+            wd.write_json(output, {})
+            return []
+        return pipeline.Stage(name, output, fn)
+    monkeypatch.setattr(pipeline, "STAGES", [stage("ingest", "meta.json"), stage("shots", "shots.json"),
+                                             stage("merge", "template.json", ("meta.json", "shots.json"))])
+    monkeypatch.setattr(cli, "require_ffmpeg", lambda: None)
+    r = runner.invoke(cli.app, ["analyze", str(v), "--out", str(tmp_path / "work"), "--stages", "ingest"])
+    assert r.exit_code == 0, r.output
+    assert "Analysis done; template.json not written (merge stage not run)" in r.output

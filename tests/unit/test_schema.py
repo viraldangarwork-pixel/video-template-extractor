@@ -38,7 +38,7 @@ def test_schema_error_names_path():
     (lambda t: t["shots"][1]["transition_in"].update(duration_ms=1000), "must be shorter than both"),
     (lambda t: (t["shots"][0].update(end_ms=20), t["shots"][1].update(start_ms=20),
                 t["shots"][1]["transition_in"].update(type="cut", duration_ms=0)),
-     "shots\\[0\\] is 20 ms long, shorter than one frame \\(34 ms at 30 fps\\)"),
+     "shots\\[0\\] is 20 ms long, shorter than one frame \\(33 ms at 30 fps\\)"),
     (lambda t: (t["shots"][1].update(end_ms=2980), t["shots"].append(
         {"id": "s3", "start_ms": 2980, "end_ms": 3000, "slot": "clip_3", "on_beat": False,
          "transition_in": {"type": "cut", "duration_ms": 0}})), "shots\\[2\\] is 20 ms long"),
@@ -52,7 +52,7 @@ def test_timeline_errors(mutate, msg):
 
 def test_one_frame_shot_is_allowed():
     t = copy.deepcopy(GOOD)
-    t["shots"][0]["end_ms"] = t["shots"][1]["start_ms"] = 34
+    t["shots"][0]["end_ms"] = t["shots"][1]["start_ms"] = 33           # frame-rounded one frame at 30 fps
     t["shots"][1]["transition_in"] = {"type": "cut", "duration_ms": 0}
     validate(t)
 

@@ -5,14 +5,17 @@ from pathlib import Path
 from vtpl.analyzers.audio import beats_of_file
 from vtpl.render.graph import build_args, frames_to_ms, plan_segments, trim_start_ms
 from vtpl.render.slots import MediaError, resolve_media
-from vtpl.render.snap import snap_template
-from vtpl.schema import validate
+from vtpl.render.snap import beat_phase_ms, snap_template
+from vtpl.schema import TemplateError, validate
 from vtpl.util.ffmpeg import duration_ms, require_ffmpeg, run_ffmpeg
 
 
 def render(template_path: Path, media_dir: Path, out: Path, snap_to_beats: bool = False) -> list[str]:
     require_ffmpeg()
-    template = json.loads(Path(template_path).read_text())
+    try:
+        template = json.loads(Path(template_path).read_text())
+    except json.JSONDecodeError as e:
+        raise TemplateError(f"{Path(template_path).name} is not valid JSON: {e}") from None
     validate(template)
     media = resolve_media(template, media_dir)
     if snap_to_beats:
@@ -21,7 +24,8 @@ def render(template_path: Path, media_dir: Path, out: Path, snap_to_beats: bool 
         beats = beats_of_file(media.music)
         if beats["bpm"] is None:
             raise MediaError(f"No beats found in {media.music.name}; render without --snap-to-beats")
-        template = snap_template(template, beats["bpm"], first_beat_ms=beats["beats_ms"][0])
+        phase = beat_phase_ms(beats["beats_ms"], 60000.0 / beats["bpm"])
+        template = snap_template(template, beats["bpm"], first_beat_ms=phase)
         validate(template)
 
     segs = plan_segments(template)

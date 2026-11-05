@@ -2,7 +2,7 @@ import copy
 
 import pytest
 
-from vtpl.render.snap import snap_template
+from vtpl.render.snap import beat_phase_ms, snap_template
 from vtpl.schema import TemplateError, validate
 from tests.unit.test_schema import GOOD
 
@@ -58,3 +58,30 @@ def test_snap_grid_does_not_drift_with_fractional_period():
     t = _three_shots([1, 1, 1])
     t = snap_template(t, new_bpm=90.0, first_beat_ms=100)      # period 666.67 ms
     assert [s["end_ms"] for s in t["shots"]] == [round(100 + k * 60000 / 90) for k in (1, 2, 3)]
+
+
+def _circ(a, b, period=500):
+    d = (a - b) % period
+    return min(d, period - d)
+
+
+def test_beat_phase_regular_grid():
+    assert beat_phase_ms([250 + k * 500 for k in range(10)], 500.0) == 250
+
+
+def test_beat_phase_ignores_missing_first_beat_and_outlier():
+    beats = [250 + k * 500 for k in range(10)]
+    assert beat_phase_ms(beats[1:], 500.0) == 250
+    assert beat_phase_ms(sorted([100, *beats[1:]]), 500.0) == 250
+
+
+def test_beat_phase_handles_wraparound_jitter():
+    beats = [k * 500 + (-5 if k % 2 else 5) for k in range(10)]        # 5, 495, 1005, 1495, ...
+    p = beat_phase_ms(beats, 500.0)
+    assert _circ(p, 0) <= 5
+    beats_out = [b for b in beats] + [1250]                                 # one off-grid outlier
+    assert _circ(beat_phase_ms(sorted(beats_out), 500.0), 0) <= 5
+
+
+def test_beat_phase_empty():
+    assert beat_phase_ms([], 500.0) == 0

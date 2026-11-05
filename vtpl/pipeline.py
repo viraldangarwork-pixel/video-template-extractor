@@ -31,10 +31,13 @@ def analyze(source: Path, out_root: Path, force: bool = False, only: set[str] | 
             stages: list[Stage] | None = None) -> Path:
     """Run stages in order. Returns the path of template.json."""
     wd = WorkDir(Path(out_root) / video_id(source))
+    stages = stages or STAGES
+    merge_inputs = [s.output for s in stages if s.name in CRITICAL and s.name != "merge"]
     dirty = False  # an upstream stage ran, so template.json would be stale
-    for st in stages or STAGES:
+    for st in stages:
         if st.name == "merge" and dirty:
-            pass
+            if not (only and "merge" in only) and not all(wd.has(n) for n in merge_inputs):
+                continue          # forced re-merge, but e.g. shots never ran: nothing to merge yet
         elif only and st.name not in only:
             continue
         elif wd.has(st.output) and not force:
