@@ -94,6 +94,16 @@ def dissolve_span(frames: np.ndarray, c: int, max_half: int = 12, res_thr: float
     return best
 
 
+def _dissolve(frames: np.ndarray, c: int) -> tuple[int, int] | None:
+    """dissolve_span, re-fitted around the span's midpoint: detectors often flag a dissolve's
+    first frame, and a window centred there truncates the far end of the blend."""
+    span = dissolve_span(frames, c)
+    if span is None:
+        return None
+    again = dissolve_span(frames, (span[0] + span[1] + 1) // 2)
+    return again if again and again[1] - again[0] > span[1] - span[0] else span
+
+
 def long_range_diff(frames: np.ndarray, k: int = 6) -> np.ndarray:
     L = np.zeros(len(frames), dtype=np.float32)
     for i in range(k, len(frames) - k):
@@ -116,13 +126,13 @@ def classify_boundaries(cut_frames: list[int], frames: np.ndarray, luma: np.ndar
     for c in sorted(set(cut_frames)):
         if covered(c):
             continue
-        span = dissolve_span(frames, c)
+        span = _dissolve(frames, c)
         out.append(_boundary("dissolve", *span) if span else
                    {"frame": c, "type": "cut", "duration_frames": 0, "span": (c, c)})
     for c in dissolve_candidates(frames):
         if covered(c) or any(abs(c - x["frame"]) <= 6 for x in out):
             continue
-        span = dissolve_span(frames, c)
+        span = _dissolve(frames, c)
         if span:
             out.append(_boundary("dissolve", *span))
     return sorted(out, key=lambda x: x["frame"])
