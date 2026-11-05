@@ -85,3 +85,8 @@ def test_beat_phase_handles_wraparound_jitter():
 
 def test_beat_phase_empty():
     assert beat_phase_ms([], 500.0) == 0
+
+
+@pytest.mark.parametrize("beats", [[461, 923, 1384, 1846], [459, 462, 924, 1385]])
+def test_beat_phase_wraps_near_full_period_to_zero(beats):
+    assert beat_phase_ms(beats, 461.54) <= 5
