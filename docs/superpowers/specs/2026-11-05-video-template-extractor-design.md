@@ -115,7 +115,7 @@ ffprobe for streams. FFmpeg normalises to 30 fps CFR, scales/pads to 1080×1920,
 faster-whisper `small`, `compute_type="int8"`, `word_timestamps=True`, VAD filter on. Output words with start/end ms and probability. Skipped when no audio.
 
 ### 6.5 Text
-1. **Detect**: RapidOCR on cached frames every 100 ms (every 3rd frame at 30 fps, from the 15 fps cache → every other cached frame ≈ 133 ms; use full-res frame if box height < 20 px at 540 p). Keep boxes with score ≥ 0.6.
+1. **Detect**: RapidOCR on every 2nd cached frame (15 fps cache → one sample every ≈ 133 ms). If a detected box is < 20 px tall at 540 p, re-run OCR on the full-res frame for that box. Keep boxes with score ≥ 0.6.
 2. **Track**: greedy linking frame to frame. Match if IoU ≥ 0.5 **and** `rapidfuzz.ratio ≥ 80` (or text is a prefix — supports typewriter). Allow gaps ≤ 3 samples. Drop tracks shorter than 300 ms. Track text = most frequent string.
 3. **Refine timing**: at full frame rate, around start and end ± 200 ms, compute mean absolute pixel difference inside the box vs. the first/last confirmed frame; boundary = first/last frame under threshold.
 4. **Style** (on the 3 sharpest frames of the track, full-res crop):
