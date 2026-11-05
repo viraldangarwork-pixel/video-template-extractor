@@ -1,0 +1,77 @@
+from dataclasses import dataclass
+from pathlib import Path
+
+XFADE = {"dissolve": "fade", "fade": "fadeblack", "flash": "fadewhite"}
+W, H, FPS = 1080, 1920, 30
+
+
+@dataclass(frozen=True)
+class Segment:
+    slot: str
+    length_ms: int      # shot length plus transition overlaps
+    trans_in: str       # cut | fade | dissolve | flash
+    trans_in_ms: int
+    offset_ms: int      # where this segment starts in the output timeline (xfade offset)
+
+
+def _dur(tin: dict) -> int:
+    return 0 if tin["type"] == "cut" else tin["duration_ms"]
+
+
+def plan_segments(template: dict) -> list[Segment]:
+    shots = template["shots"]
+    segs = []
+    for i, s in enumerate(shots):
+        d_in = _dur(s["transition_in"]) if i > 0 else 0
+        d_out = _dur(shots[i + 1]["transition_in"]) if i + 1 < len(shots) else 0
+        length = (s["end_ms"] - s["start_ms"]) + d_in // 2 + (d_out - d_out // 2)
+        segs.append(Segment(s["slot"], length, s["transition_in"]["type"] if d_in else "cut", d_in,
+                            s["start_ms"] - d_in // 2))
+    return segs
+
+
+def trim_start_ms(clip_ms: int, need_ms: int) -> int:
+    return max(0, (clip_ms - need_ms) // 2)
+
+
+def _s(ms: int) -> str:
+    return f"{ms / 1000:.3f}"
+
+
+def build_filter(segs: list[Segment], trims_ms: list[int], has_music: bool, duration_ms: int) -> str:
+    parts = [
+        f"[{i}:v]trim=start={_s(t0)}:duration={_s(seg.length_ms)},setpts=PTS-STARTPTS,"
+        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},format=yuv420p,settb=AVTB[s{i}]"
+        for i, (seg, t0) in enumerate(zip(segs, trims_ms))
+    ]
+    cur = "[s0]"
+    for i in range(1, len(segs)):
+        seg, nxt = segs[i], f"[j{i}]"
+        if seg.trans_in == "cut":
+            parts.append(f"{cur}[s{i}]concat=n=2:v=1:a=0{nxt}")
+        else:
+            parts.append(f"{cur}[s{i}]xfade=transition={XFADE[seg.trans_in]}:"
+                         f"duration={_s(seg.trans_in_ms)}:offset={_s(seg.offset_ms)}{nxt}")
+        cur = nxt
+    parts.append(f"{cur}trim=duration={_s(duration_ms)},setpts=PTS-STARTPTS[vout]")
+    if has_music:
+        n = len(segs)
+        fade_at = max(0, duration_ms - 300)
+        parts.append(f"[{n}:a]atrim=0:{_s(duration_ms)},asetpts=PTS-STARTPTS,"
+                     f"afade=t=out:st={_s(fade_at)}:d=0.3[aout]")
+    return ";".join(parts)
+
+
+def build_args(segs: list[Segment], clips: list[Path], trims_ms: list[int], music: Path | None,
+               duration_ms: int, out: Path) -> list[str]:
+    args: list[str] = []
+    for p in clips:
+        args += ["-stream_loop", "-1", "-i", str(p)]
+    if music is not None:
+        args += ["-stream_loop", "-1", "-i", str(music)]
+    args += ["-filter_complex", build_filter(segs, trims_ms, music is not None, duration_ms), "-map", "[vout]"]
+    if music is not None:
+        args += ["-map", "[aout]", "-c:a", "aac", "-b:a", "192k"]
+    args += ["-c:v", "libx264", "-crf", "20", "-preset", "medium", "-pix_fmt", "yuv420p",
+             "-movflags", "+faststart", "-t", _s(duration_ms), str(out)]
+    return args
