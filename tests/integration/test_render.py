@@ -24,3 +24,42 @@ def test_render_produces_video_with_audio(tmp_path):
     assert abs(duration_ms(out) - 3000) <= 70
     assert {s["codec_type"] for s in probe(out)["streams"]} == {"video", "audio"}
     assert (tmp_path / "render_cmd.txt").read_text().startswith("ffmpeg ")
+
+
+def _cut_frames(path):
+    import cv2
+
+    cap = cv2.VideoCapture(str(path))
+    labels = []
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+        b, g, r = frame.reshape(-1, 3).mean(axis=0)
+        labels.append(g > r)            # cyan has high green, magenta has low green
+    cap.release()
+    return [k for k in range(1, len(labels)) if labels[k] != labels[k - 1]]
+
+
+def test_hard_cuts_do_not_drift(tmp_path):
+    import copy
+
+    from tests.unit.test_schema import GOOD
+    t = copy.deepcopy(GOOD)
+    n, length = 6, 1049
+    t["shots"] = [{"id": f"s{i + 1}", "start_ms": i * length, "end_ms": (i + 1) * length, "slot": f"clip_{i + 1}",
+                   "on_beat": False, "transition_in": {"type": "cut", "duration_ms": 0}} for i in range(n)]
+    t["meta"]["duration_ms"] = n * length
+    t["audio"]["beat_pattern"] = [2] * n
+    tpl = tmp_path / "template.json"
+    tpl.write_text(json.dumps(t))
+    media = tmp_path / "mine"
+    media.mkdir()
+    for i in range(n):
+        solid_clip(media / f"clip_{i + 1}.mp4", "cyan" if i % 2 == 0 else "magenta")
+    out = tmp_path / "out.mp4"
+    render(tpl, media, out)
+    cuts_ms = [k * 1000 / 30 for k in _cut_frames(out)]
+    assert len(cuts_ms) == n - 1
+    for i, got in enumerate(cuts_ms, start=1):
+        assert abs(got - i * length) <= 34, f"cut {i} at {got:.0f} ms, template says {i * length} ms"

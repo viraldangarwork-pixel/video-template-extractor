@@ -3,7 +3,7 @@ import shlex
 from pathlib import Path
 
 from vtpl.analyzers.audio import beats_of_file
-from vtpl.render.graph import build_args, plan_segments, trim_start_ms
+from vtpl.render.graph import build_args, frames_to_ms, plan_segments, trim_start_ms
 from vtpl.render.slots import MediaError, resolve_media
 from vtpl.render.snap import snap_template
 from vtpl.schema import validate
@@ -26,7 +26,7 @@ def render(template_path: Path, media_dir: Path, out: Path, snap_to_beats: bool 
 
     segs = plan_segments(template)
     clips = [media.clips[s.slot] for s in segs]
-    trims = [trim_start_ms(duration_ms(c), s.length_ms) for c, s in zip(clips, segs)]
+    trims = [trim_start_ms(duration_ms(c), frames_to_ms(s.length_frames)) for c, s in zip(clips, segs)]
     args = build_args(segs, clips, trims, media.music, template["meta"]["duration_ms"], Path(out))
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     (Path(out).parent / "render_cmd.txt").write_text("ffmpeg " + shlex.join(args) + "\n")

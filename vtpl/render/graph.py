@@ -8,14 +8,23 @@ W, H, FPS = 1080, 1920, 30
 @dataclass(frozen=True)
 class Segment:
     slot: str
-    length_ms: int      # shot length plus transition overlaps
-    trans_in: str       # cut | fade | dissolve | flash
-    trans_in_ms: int
-    offset_ms: int      # where this segment starts in the output timeline (xfade offset)
+    length_frames: int    # shot length plus transition overlaps, in output frames
+    trans_in: str         # cut | fade | dissolve | flash
+    trans_in_frames: int
+    offset_frames: int    # where this segment starts in the output timeline (xfade offset)
+
+
+def frames(ms: int) -> int:
+    """Map a template time to the nearest output frame index, so all boundaries share one grid."""
+    return round(ms * FPS / 1000)
+
+
+def frames_to_ms(n: int) -> int:
+    return -(-n * 1000 // FPS)    # ceil, so a clip trimmed to this many ms still covers n frames
 
 
 def _dur(tin: dict) -> int:
-    return 0 if tin["type"] == "cut" else tin["duration_ms"]
+    return 0 if tin["type"] == "cut" else frames(tin["duration_ms"])
 
 
 def plan_segments(template: dict) -> list[Segment]:
@@ -24,9 +33,10 @@ def plan_segments(template: dict) -> list[Segment]:
     for i, s in enumerate(shots):
         d_in = _dur(s["transition_in"]) if i > 0 else 0
         d_out = _dur(shots[i + 1]["transition_in"]) if i + 1 < len(shots) else 0
-        length = (s["end_ms"] - s["start_ms"]) + d_in // 2 + (d_out - d_out // 2)
+        f0, f1 = frames(s["start_ms"]), frames(s["end_ms"])
+        length = (f1 - f0) + d_in // 2 + (d_out - d_out // 2)
         segs.append(Segment(s["slot"], length, s["transition_in"]["type"] if d_in else "cut", d_in,
-                            s["start_ms"] - d_in // 2))
+                            f0 - d_in // 2))
     return segs
 
 
@@ -38,10 +48,15 @@ def _s(ms: int) -> str:
     return f"{ms / 1000:.3f}"
 
 
+def _f(n: int) -> str:
+    return f"{n / FPS:.6f}"
+
+
 def build_filter(segs: list[Segment], trims_ms: list[int], has_music: bool, duration_ms: int) -> str:
     parts = [
-        f"[{i}:v]trim=start={_s(t0)}:duration={_s(seg.length_ms)},setpts=PTS-STARTPTS,"
-        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},format=yuv420p,settb=AVTB[s{i}]"
+        f"[{i}:v]trim=start={_s(t0)},setpts=PTS-STARTPTS,"
+        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},"
+        f"trim=end_frame={seg.length_frames},setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s{i}]"
         for i, (seg, t0) in enumerate(zip(segs, trims_ms))
     ]
     cur = "[s0]"
@@ -51,7 +66,7 @@ def build_filter(segs: list[Segment], trims_ms: list[int], has_music: bool, dura
             parts.append(f"{cur}[s{i}]concat=n=2:v=1:a=0{nxt}")
         else:
             parts.append(f"{cur}[s{i}]xfade=transition={XFADE[seg.trans_in]}:"
-                         f"duration={_s(seg.trans_in_ms)}:offset={_s(seg.offset_ms)}{nxt}")
+                         f"duration={_f(seg.trans_in_frames)}:offset={_f(seg.offset_frames)}{nxt}")
         cur = nxt
     parts.append(f"{cur}trim=duration={_s(duration_ms)},setpts=PTS-STARTPTS[vout]")
     if has_music:

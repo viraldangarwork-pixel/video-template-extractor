@@ -11,10 +11,18 @@ T = {"shots": [
 
 def test_plan_segments():
     assert plan_segments(T) == [
-        Segment("clip_1", 1200, "cut", 0, 0),
-        Segment("clip_2", 1700, "dissolve", 400, 800),
-        Segment("clip_3", 1500, "cut", 0, 2500),
+        Segment("clip_1", 36, "cut", 0, 0),
+        Segment("clip_2", 51, "dissolve", 12, 24),
+        Segment("clip_3", 45, "cut", 0, 75),
     ]
+
+
+def test_plan_segments_lengths_sum_to_frame_aligned_boundaries():
+    shots = [{"slot": f"clip_{i}", "start_ms": i * 1049, "end_ms": (i + 1) * 1049,
+              "transition_in": {"type": "cut", "duration_ms": 0}} for i in range(6)]
+    segs = plan_segments({"shots": shots, "meta": {"duration_ms": 6 * 1049}})
+    assert [s.offset_frames for s in segs] == [round(i * 1049 * 30 / 1000) for i in range(6)]
+    assert sum(s.length_frames for s in segs) == round(6 * 1049 * 30 / 1000)
 
 
 def test_trim_start_centres_clip():
@@ -24,8 +32,10 @@ def test_trim_start_centres_clip():
 
 def test_build_filter():
     f = build_filter(plan_segments(T), [0, 100, 200], has_music=True, duration_ms=4000)
-    assert "[0:v]trim=start=0.000:duration=1.200,setpts=PTS-STARTPTS" in f
-    assert "[s0][s1]xfade=transition=fade:duration=0.400:offset=0.800[j1]" in f
+    assert "[0:v]trim=start=0.000,setpts=PTS-STARTPTS,scale=" in f
+    assert "fps=30,trim=end_frame=36,setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s0]" in f
+    assert "trim=end_frame=51," in f and "trim=end_frame=45," in f
+    assert "[s0][s1]xfade=transition=fade:duration=0.400000:offset=0.800000[j1]" in f
     assert "[j1][s2]concat=n=2:v=1:a=0[j2]" in f
     assert "[j2]trim=duration=4.000,setpts=PTS-STARTPTS[vout]" in f
     assert "[3:a]atrim=0:4.000,asetpts=PTS-STARTPTS,afade=t=out:st=3.700:d=0.3[aout]" in f
