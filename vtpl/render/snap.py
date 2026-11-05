@@ -14,7 +14,10 @@ def beat_phase_ms(beats_ms: list[int], period_ms: float, tol_ms: float = 40.0) -
 
     def support(p: float) -> int:
         return sum(min((c - p) % period_ms, (p - c) % period_ms) <= tol_ms for c in cands)
-    return int(round(max(cands, key=support))) % int(round(period_ms))
+    phase = max(cands, key=support)
+    if phase > period_ms - tol_ms:       # just under a full period is really ~0 (shot 0 must not gain a beat)
+        phase -= period_ms
+    return max(0, int(round(phase)))
 
 
 def snap_template(template: dict, new_bpm: float, first_beat_ms: int = 0) -> dict:

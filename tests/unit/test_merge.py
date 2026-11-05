@@ -38,7 +38,7 @@ def test_run_reads_workdir(tmp_path):
     assert wd.read_json("template.json")["meta"]["source_id"] == "abc123abc123"
 
 
-def test_build_template_drops_times_outside_video():
+def test_build_template_drops_starts_outside_and_clips_end():
     audio = {"bpm": 120.0, "beats_ms": [500, 1000, 3000, 3500], "downbeat_hint_ms": [500, 3500]}
     speech = {"language": "en", "words": [{"w": "hi", "start_ms": 100, "end_ms": 300, "p": 0.9},
                                           {"w": "end", "start_ms": 2900, "end_ms": 3000, "p": 0.9},
@@ -48,4 +48,4 @@ def test_build_template_drops_times_outside_video():
     validate(t)
     assert t["audio"]["beats_ms"] == [500, 1000, 3000]
     assert t["audio"]["downbeat_hint_ms"] == [500]
-    assert [w["w"] for w in t["captions"]["words"]] == ["hi", "end"]
+    assert [(w["w"], w["end_ms"]) for w in t["captions"]["words"]] == [("hi", 300), ("end", 3000), ("late", 3000)]

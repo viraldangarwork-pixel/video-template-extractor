@@ -1,4 +1,3 @@
-import math
 
 from jsonschema import Draft202012Validator
 
@@ -69,15 +68,13 @@ class TemplateError(ValueError):
 
 def check_timeline(t: dict) -> None:
     shots, dur, fps = t["shots"], t["meta"]["duration_ms"], t["meta"]["fps"]
-    frame_ms = math.floor(1000 / fps)     # a frame-rounded one-frame shot at 30 fps is 33 ms
     if shots[0]["start_ms"] != 0:
         raise TemplateError("shots[0].start_ms must be 0")
     for i, s in enumerate(shots):
         if s["end_ms"] <= s["start_ms"]:
             raise TemplateError(f"shots[{i}] has end_ms <= start_ms")
-        if s["end_ms"] - s["start_ms"] < frame_ms:
-            raise TemplateError(f"shots[{i}] is {s['end_ms'] - s['start_ms']} ms long, shorter than one frame "
-                                f"({frame_ms} ms at {fps:g} fps)")
+        if round(s["end_ms"] * fps / 1000) <= round(s["start_ms"] * fps / 1000):     # the renderer's frame mapping
+            raise TemplateError(f"shots[{i}] covers no whole frame at {fps:g} fps")
         if i and s["start_ms"] != shots[i - 1]["end_ms"]:
             raise TemplateError(f"shots[{i}].start_ms must equal shots[{i - 1}].end_ms")
         d = s["transition_in"]["duration_ms"]
