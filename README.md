@@ -26,6 +26,8 @@ music: song.wav
 ```
 
 Speech uses faster-whisper `small` by default; set `VTPL_WHISPER_MODEL=tiny` for speed. The first run downloads the model.
+To skip speech (and the Whisper download) entirely, run only the other stages:
+`vtpl analyze reel.mp4 --stages ingest,shots,audio,merge` (the template then has no captions).
 
 ## Test
 

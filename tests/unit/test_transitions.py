@@ -85,3 +85,27 @@ def test_very_long_dissolve_without_detector_cuts_is_one_dissolve():
     frames = np.concatenate([solid(RED, 30), blend(RED, BLUE, 40), solid(BLUE, 30)])
     b = classify_boundaries([], frames, luma(frames))
     assert [x["type"] for x in b] == ["dissolve"]
+
+
+def _moving(colour, phase0, n, rng):
+    yy, xx = np.mgrid[0:8, 0:4].astype(np.float32)
+    return [(0.5 + 0.4 * np.sin((xx + yy) * 0.9 + phase0 + 0.05 * t))[..., None] * colour for t in range(n)]
+
+
+def test_fast_motion_hard_cut_is_not_a_short_dissolve():
+    """Motion smear on the two frames either side of a hard cut mimics a 4-frame blend; spec §6.2
+    dissolves span at least 5 frames, so this must stay a cut."""
+    rng = np.random.default_rng(0)
+    f1 = _moving(np.array([1.0, 0.3, 0.1], np.float32), 0.0, 30, rng)
+    f2 = _moving(np.array([0.1, 0.4, 1.0], np.float32), 1.5, 30, rng)
+    A, B = f1[-1].copy(), f2[0].copy()
+    for j, w in ((-2, 0.2), (-1, 0.4)):
+        f1[j] = (1 - w) * f1[j] + w * (0.9 * B + 0.1 * rng.random(B.shape))
+    for j, w in ((0, 0.4), (1, 0.2)):
+        f2[j] = (1 - w) * f2[j] + w * (0.9 * A + 0.1 * rng.random(A.shape))
+    frames = np.stack(f1 + f2).astype(np.float32)
+    frames = np.clip(frames + 0.02 * rng.standard_normal(frames.shape).astype(np.float32), 0, 1)
+    short = dissolve_span(frames, 30, min_blend=3)
+    assert short is not None and short[1] - short[0] + 1 <= 4          # what the old threshold accepted
+    b = classify_boundaries([30], frames, luma(frames))
+    assert [(x["frame"], x["type"]) for x in b] == [(30, "cut")]

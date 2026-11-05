@@ -64,7 +64,7 @@ def find_flashes(luma: np.ndarray, frames: np.ndarray, max_len: int = 4,
 
 
 def dissolve_span(frames: np.ndarray, c: int, max_half: int = 12, res_thr: float = 0.25,
-                  min_blend: int = 3) -> tuple[int, int] | None:
+                  min_blend: int = 5) -> tuple[int, int] | None:
     """Inclusive frame span of a linear blend around frame c, or None."""
     best = None
     for half in range(2, max_half + 1):

@@ -36,3 +36,16 @@ def test_run_reads_workdir(tmp_path):
     wd.write_json("audio.json", AUDIO)
     assert merge.run(wd, tmp_path / "v.mp4") == ["speech.json missing: no captions"]
     assert wd.read_json("template.json")["meta"]["source_id"] == "abc123abc123"
+
+
+def test_build_template_drops_times_outside_video():
+    audio = {"bpm": 120.0, "beats_ms": [500, 1000, 3000, 3500], "downbeat_hint_ms": [500, 3500]}
+    speech = {"language": "en", "words": [{"w": "hi", "start_ms": 100, "end_ms": 300, "p": 0.9},
+                                          {"w": "end", "start_ms": 2900, "end_ms": 3000, "p": 0.9},
+                                          {"w": "late", "start_ms": 2950, "end_ms": 3200, "p": 0.9},
+                                          {"w": "gone", "start_ms": 3100, "end_ms": 3300, "p": 0.9}]}
+    t = merge.build_template(META, SHOTS, audio, speech, source_id="abc")
+    validate(t)
+    assert t["audio"]["beats_ms"] == [500, 1000, 3000]
+    assert t["audio"]["downbeat_hint_ms"] == [500]
+    assert [w["w"] for w in t["captions"]["words"]] == ["hi", "end"]
