@@ -134,3 +134,24 @@ def test_analyze_ingest_only_on_fresh_dir(tmp_path, monkeypatch):
     r = runner.invoke(cli.app, ["analyze", str(v), "--out", str(tmp_path / "work"), "--stages", "ingest"])
     assert r.exit_code == 0, r.output
     assert "Analysis done; template.json not written (merge stage not run)" in r.output
+
+
+def test_analyze_reports_failed_optional_stages(tmp_path, monkeypatch):
+    import json
+    v = tmp_path / "v.mp4"
+    v.write_bytes(b"x")
+    work = tmp_path / "work" / "abc"
+    work.mkdir(parents=True)
+
+    def fake(src, out, force, only):
+        (work / "run.json").write_text(json.dumps({"stages": {
+            "ingest": {"status": "ok", "seconds": 0.1, "warnings": []},
+            "speech": {"status": "failed", "seconds": 0.1, "warnings": ["model missing", "second"]}}}))
+        return work / "template.json"
+
+    monkeypatch.setattr(cli, "require_ffmpeg", lambda: None)
+    monkeypatch.setattr(cli, "run_analyze", fake)
+    r = runner.invoke(cli.app, ["analyze", str(v)])
+    assert r.exit_code == 0
+    assert "Warning: speech failed: model missing" in r.output
+    assert "ingest failed" not in r.output and "second" not in r.output

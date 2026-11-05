@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import NoReturn
 
@@ -44,6 +45,11 @@ def analyze(
         if isinstance(e, FileNotFoundError) and e.filename and Path(e.filename).name == "meta.json":
             msg += " (run the ingest stage first)"
         _fail(msg)
+    run_json = template.parent / "run.json"
+    if run_json.exists():
+        for stage, info in json.loads(run_json.read_text()).get("stages", {}).items():
+            if info.get("status") == "failed":
+                typer.echo(f"Warning: {stage} failed: {(info.get('warnings') or ['unknown error'])[0]}")
     if template.exists():
         typer.echo(f"Template written: {template}")
     else:
