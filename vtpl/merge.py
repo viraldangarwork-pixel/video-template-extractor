@@ -13,8 +13,8 @@ def build_template(meta: dict, shots_doc: dict, audio: dict | None, speech: dict
     dur = meta["duration_ms"]
     audio = audio or {"bpm": None, "beats_ms": [], "downbeat_hint_ms": []}
     audio = {**audio, **{k: [ms for ms in audio[k] if 0 <= ms <= dur] for k in ("beats_ms", "downbeat_hint_ms")}}
-    words = [{"w": w["w"], "start_ms": w["start_ms"], "end_ms": w["end_ms"]} for w in (speech or {}).get("words", [])
-             if 0 <= w["start_ms"] and w["end_ms"] <= dur]
+    words = [{"w": w["w"], "start_ms": w["start_ms"], "end_ms": min(w["end_ms"], dur)}
+             for w in (speech or {}).get("words", []) if 0 <= w["start_ms"] < dur]
     shots = clamp_transitions(copy.deepcopy(shots_doc["shots"]))
     out_shots = [{
         "id": f"s{i + 1}",
