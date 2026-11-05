@@ -1,0 +1,296 @@
+[
+  {
+    "id": "Montserrat-Regular",
+    "family": "Montserrat",
+    "weight": 400,
+    "file": "montserrat-400.ttf",
+    "slug": "montserrat"
+  },
+  {
+    "id": "Montserrat-Bold",
+    "family": "Montserrat",
+    "weight": 700,
+    "file": "montserrat-700.ttf",
+    "slug": "montserrat"
+  },
+  {
+    "id": "Poppins-Regular",
+    "family": "Poppins",
+    "weight": 400,
+    "file": "poppins-400.ttf",
+    "slug": "poppins"
+  },
+  {
+    "id": "Poppins-Bold",
+    "family": "Poppins",
+    "weight": 700,
+    "file": "poppins-700.ttf",
+    "slug": "poppins"
+  },
+  {
+    "id": "Roboto-Regular",
+    "family": "Roboto",
+    "weight": 400,
+    "file": "roboto-400.ttf",
+    "slug": "roboto"
+  },
+  {
+    "id": "Roboto-Bold",
+    "family": "Roboto",
+    "weight": 700,
+    "file": "roboto-700.ttf",
+    "slug": "roboto"
+  },
+  {
+    "id": "BebasNeue-Regular",
+    "family": "Bebas Neue",
+    "weight": 400,
+    "file": "bebas-neue-400.ttf",
+    "slug": "bebas-neue"
+  },
+  {
+    "id": "Anton-Regular",
+    "family": "Anton",
+    "weight": 400,
+    "file": "anton-400.ttf",
+    "slug": "anton"
+  },
+  {
+    "id": "Oswald-Bold",
+    "family": "Oswald",
+    "weight": 700,
+    "file": "oswald-700.ttf",
+    "slug": "oswald"
+  },
+  {
+    "id": "OpenSans-Bold",
+    "family": "Open Sans",
+    "weight": 700,
+    "file": "open-sans-700.ttf",
+    "slug": "open-sans"
+  },
+  {
+    "id": "Lato-Bold",
+    "family": "Lato",
+    "weight": 700,
+    "file": "lato-700.ttf",
+    "slug": "lato"
+  },
+  {
+    "id": "Raleway-Bold",
+    "family": "Raleway",
+    "weight": 700,
+    "file": "raleway-700.ttf",
+    "slug": "raleway"
+  },
+  {
+    "id": "LeagueSpartan-Bold",
+    "family": "League Spartan",
+    "weight": 700,
+    "file": "league-spartan-700.ttf",
+    "slug": "league-spartan"
+  },
+  {
+    "id": "DMSans-Bold",
+    "family": "DM Sans",
+    "weight": 700,
+    "file": "dm-sans-700.ttf",
+    "slug": "dm-sans"
+  },
+  {
+    "id": "Nunito-Bold",
+    "family": "Nunito",
+    "weight": 700,
+    "file": "nunito-700.ttf",
+    "slug": "nunito"
+  },
+  {
+    "id": "Rubik-Bold",
+    "family": "Rubik",
+    "weight": 700,
+    "file": "rubik-700.ttf",
+    "slug": "rubik"
+  },
+  {
+    "id": "WorkSans-Bold",
+    "family": "Work Sans",
+    "weight": 700,
+    "file": "work-sans-700.ttf",
+    "slug": "work-sans"
+  },
+  {
+    "id": "Inter-Bold",
+    "family": "Inter",
+    "weight": 700,
+    "file": "inter-700.ttf",
+    "slug": "inter"
+  },
+  {
+    "id": "ArchivoBlack-Regular",
+    "family": "Archivo Black",
+    "weight": 400,
+    "file": "archivo-black-400.ttf",
+    "slug": "archivo-black"
+  },
+  {
+    "id": "Bangers-Regular",
+    "family": "Bangers",
+    "weight": 400,
+    "file": "bangers-400.ttf",
+    "slug": "bangers"
+  },
+  {
+    "id": "LuckiestGuy-Regular",
+    "family": "Luckiest Guy",
+    "weight": 400,
+    "file": "luckiest-guy-400.ttf",
+    "slug": "luckiest-guy"
+  },
+  {
+    "id": "PermanentMarker-Regular",
+    "family": "Permanent Marker",
+    "weight": 400,
+    "file": "permanent-marker-400.ttf",
+    "slug": "permanent-marker"
+  },
+  {
+    "id": "Pacifico-Regular",
+    "family": "Pacifico",
+    "weight": 400,
+    "file": "pacifico-400.ttf",
+    "slug": "pacifico"
+  },
+  {
+    "id": "Lobster-Regular",
+    "family": "Lobster",
+    "weight": 400,
+    "file": "lobster-400.ttf",
+    "slug": "lobster"
+  },
+  {
+    "id": "DancingScript-Bold",
+    "family": "Dancing Script",
+    "weight": 700,
+    "file": "dancing-script-700.ttf",
+    "slug": "dancing-script"
+  },
+  {
+    "id": "Caveat-Bold",
+    "family": "Caveat",
+    "weight": 700,
+    "file": "caveat-700.ttf",
+    "slug": "caveat"
+  },
+  {
+    "id": "PlayfairDisplay-Bold",
+    "family": "Playfair Display",
+    "weight": 700,
+    "file": "playfair-display-700.ttf",
+    "slug": "playfair-display"
+  },
+  {
+    "id": "Merriweather-Bold",
+    "family": "Merriweather",
+    "weight": 700,
+    "file": "merriweather-700.ttf",
+    "slug": "merriweather"
+  },
+  {
+    "id": "Lora-Bold",
+    "family": "Lora",
+    "weight": 700,
+    "file": "lora-700.ttf",
+    "slug": "lora"
+  },
+  {
+    "id": "AbrilFatface-Regular",
+    "family": "Abril Fatface",
+    "weight": 400,
+    "file": "abril-fatface-400.ttf",
+    "slug": "abril-fatface"
+  },
+  {
+    "id": "Righteous-Regular",
+    "family": "Righteous",
+    "weight": 400,
+    "file": "righteous-400.ttf",
+    "slug": "righteous"
+  },
+  {
+    "id": "Fredoka-Bold",
+    "family": "Fredoka",
+    "weight": 700,
+    "file": "fredoka-700.ttf",
+    "slug": "fredoka"
+  },
+  {
+    "id": "Kanit-Bold",
+    "family": "Kanit",
+    "weight": 700,
+    "file": "kanit-700.ttf",
+    "slug": "kanit"
+  },
+  {
+    "id": "BarlowCondensed-Bold",
+    "family": "Barlow Condensed",
+    "weight": 700,
+    "file": "barlow-condensed-700.ttf",
+    "slug": "barlow-condensed"
+  },
+  {
+    "id": "Teko-Bold",
+    "family": "Teko",
+    "weight": 700,
+    "file": "teko-700.ttf",
+    "slug": "teko"
+  },
+  {
+    "id": "AlfaSlabOne-Regular",
+    "family": "Alfa Slab One",
+    "weight": 400,
+    "file": "alfa-slab-one-400.ttf",
+    "slug": "alfa-slab-one"
+  },
+  {
+    "id": "BlackOpsOne-Regular",
+    "family": "Black Ops One",
+    "weight": 400,
+    "file": "black-ops-one-400.ttf",
+    "slug": "black-ops-one"
+  },
+  {
+    "id": "Bungee-Regular",
+    "family": "Bungee",
+    "weight": 400,
+    "file": "bungee-400.ttf",
+    "slug": "bungee"
+  },
+  {
+    "id": "Staatliches-Regular",
+    "family": "Staatliches",
+    "weight": 400,
+    "file": "staatliches-400.ttf",
+    "slug": "staatliches"
+  },
+  {
+    "id": "TitanOne-Regular",
+    "family": "Titan One",
+    "weight": 400,
+    "file": "titan-one-400.ttf",
+    "slug": "titan-one"
+  },
+  {
+    "id": "PassionOne-Regular",
+    "family": "Passion One",
+    "weight": 400,
+    "file": "passion-one-400.ttf",
+    "slug": "passion-one"
+  },
+  {
+    "id": "FjallaOne-Regular",
+    "family": "Fjalla One",
+    "weight": 400,
+    "file": "fjalla-one-400.ttf",
+    "slug": "fjalla-one"
+  }
+]

@@ -17,6 +17,9 @@ dependencies = [
   "jsonschema>=4.21",
   "pyyaml>=6.0",
   "typer>=0.12",
+  "rapidocr-onnxruntime>=1.2.3",
+  "rapidfuzz>=3.0",
+  "Pillow>=10.0",
 ]
 
 [project.optional-dependencies]
@@ -32,3 +35,6 @@ include = ["vtpl*"]
 pythonpath = ["."]
 testpaths = ["tests"]
 markers = ["slow: runs FFmpeg on generated videos"]
+
+[tool.setuptools.package-data]
+vtpl = ["assets/fonts/*.ttf", "assets/fonts/*.json", "assets/fonts/*.md"]
