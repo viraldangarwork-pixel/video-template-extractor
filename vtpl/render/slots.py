@@ -26,11 +26,22 @@ def _existing(media_dir: Path, name: str, slot: str) -> Path:
     return p
 
 
+def _file_name(value, where: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise MediaError(f"{where} in texts.yaml must be a file name, got {value!r}")
+    return value
+
+
 def resolve_media(template: dict, media_dir: Path) -> Media:
     media_dir = Path(media_dir)
     cfg_path = media_dir / "texts.yaml"
     cfg = (yaml.safe_load(cfg_path.read_text()) or {}) if cfg_path.exists() else {}
+    if not isinstance(cfg, dict):
+        raise MediaError(f"texts.yaml must be a mapping (clips:, music:, text_N: keys), got a {type(cfg).__name__}")
     mapping = cfg.get("clips") or {}
+    if not isinstance(mapping, dict):
+        raise MediaError("'clips:' in texts.yaml must map slot names to file names, e.g. 'clip_1: beach.mov'")
+    mapping = {slot: _file_name(name, f"clips.{slot}") for slot, name in mapping.items()}
     by_stem = {p.stem: p for p in sorted(media_dir.iterdir()) if p.suffix.lower() in VIDEO_EXT}
 
     clips, warnings, prev = {}, [], None
@@ -44,12 +55,12 @@ def resolve_media(template: dict, media_dir: Path) -> Media:
             path = prev
         clips[slot] = prev = path
 
-    if cfg.get("music"):
-        music = _existing(media_dir, cfg["music"], "music")
+    if cfg.get("music") is not None:
+        music = _existing(media_dir, _file_name(cfg["music"], "music"), "music")
     else:
         music = next((p for p in sorted(media_dir.iterdir()) if p.stem == "music" and p.suffix.lower() in AUDIO_EXT), None)
     if music is None:
         warnings.append("No music file found; output will be silent")
 
-    texts = {k: str(v) for k, v in cfg.items() if str(k).startswith("text_")}
+    texts = {k: "" if v is None else str(v) for k, v in cfg.items() if str(k).startswith("text_")}
     return Media(clips, music, texts, warnings)

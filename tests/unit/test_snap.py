@@ -21,3 +21,10 @@ def test_snap_needs_pattern():
     t["audio"]["beat_pattern"] = []
     with pytest.raises(TemplateError, match="no beat_pattern"):
         snap_template(t, 120.0)
+
+
+def test_snap_pattern_must_match_shots():
+    t = copy.deepcopy(GOOD)
+    t["audio"]["beat_pattern"] = [2, 4, 4]
+    with pytest.raises(TemplateError, match="beat_pattern has 3 entries but template has 2 shots"):
+        snap_template(t, 120.0)

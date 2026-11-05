@@ -10,6 +10,8 @@ def snap_template(template: dict, new_bpm: float) -> dict:
     pattern = t["audio"]["beat_pattern"]
     if not pattern:
         raise TemplateError("template has no beat_pattern (the source had no music), so it cannot be snapped to beats")
+    if len(pattern) != len(t["shots"]):
+        raise TemplateError(f"beat_pattern has {len(pattern)} entries but template has {len(t['shots'])} shots")
     period = 60000.0 / new_bpm
     old = [(s["start_ms"], s["end_ms"]) for s in t["shots"]]
     new, start = [], 0

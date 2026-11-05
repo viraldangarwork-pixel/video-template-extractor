@@ -45,3 +45,24 @@ def test_no_music_warns(tmp_path):
     touch(tmp_path / "clip_1.mp4")
     media = resolve_media({"shots": [{"slot": "clip_1"}]}, tmp_path)
     assert media.music is None and media.warnings == ["No music file found; output will be silent"]
+
+
+@pytest.mark.parametrize("yaml_text,msg", [
+    ("- clip_1.mp4\n", "texts.yaml must be a mapping"),
+    ("clips:\n  - clip_1.mp4\n", "'clips:' in texts.yaml must map slot names to file names"),
+    ("clips:\n  clip_1: 5\n", "clips.clip_1 in texts.yaml must be a file name"),
+    ("clips:\n  clip_1:\n", "clips.clip_1 in texts.yaml must be a file name"),
+    ("music: [a.mp3]\n", "music in texts.yaml must be a file name"),
+])
+def test_bad_yaml_shapes(tmp_path, yaml_text, msg):
+    touch(tmp_path / "clip_1.mp4")
+    (tmp_path / "texts.yaml").write_text(yaml_text)
+    with pytest.raises(MediaError, match=msg):
+        resolve_media({"shots": [{"slot": "clip_1"}]}, tmp_path)
+
+
+def test_empty_text_values_become_empty_strings(tmp_path):
+    touch(tmp_path / "clip_1.mp4")
+    (tmp_path / "texts.yaml").write_text("text_1:\ntext_2: ''\ntext_3: 42\n")
+    media = resolve_media({"shots": [{"slot": "clip_1"}]}, tmp_path)
+    assert media.texts == {"text_1": "", "text_2": "", "text_3": "42"}

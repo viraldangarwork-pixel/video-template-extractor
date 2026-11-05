@@ -52,12 +52,12 @@ def _f(n: int) -> str:
     return f"{n / FPS:.6f}"
 
 
-def build_filter(segs: list[Segment], trims_ms: list[int], has_music: bool, duration_ms: int) -> str:
+def build_filter(segs: list[Segment], has_music: bool, duration_ms: int) -> str:
     parts = [
-        f"[{i}:v]trim=start={_s(t0)},setpts=PTS-STARTPTS,"
+        f"[{i}:v]setpts=PTS-STARTPTS,"
         f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},"
         f"trim=end_frame={seg.length_frames},setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s{i}]"
-        for i, (seg, t0) in enumerate(zip(segs, trims_ms))
+        for i, seg in enumerate(segs)
     ]
     cur = "[s0]"
     for i in range(1, len(segs)):
@@ -80,11 +80,11 @@ def build_filter(segs: list[Segment], trims_ms: list[int], has_music: bool, dura
 def build_args(segs: list[Segment], clips: list[Path], trims_ms: list[int], music: Path | None,
                duration_ms: int, out: Path) -> list[str]:
     args: list[str] = []
-    for p in clips:
-        args += ["-stream_loop", "-1", "-i", str(p)]
+    for p, t0 in zip(clips, trims_ms):
+        args += ["-ss", _s(t0), "-stream_loop", "-1", "-i", str(p)]    # input seek: no decoding up to t0
     if music is not None:
         args += ["-stream_loop", "-1", "-i", str(music)]
-    args += ["-filter_complex", build_filter(segs, trims_ms, music is not None, duration_ms), "-map", "[vout]"]
+    args += ["-filter_complex", build_filter(segs, music is not None, duration_ms), "-map", "[vout]"]
     if music is not None:
         args += ["-map", "[aout]", "-c:a", "aac", "-b:a", "192k"]
     args += ["-c:v", "libx264", "-crf", "20", "-preset", "medium", "-pix_fmt", "yuv420p",
