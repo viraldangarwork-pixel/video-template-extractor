@@ -31,10 +31,13 @@ def analyze(source: Path, out_root: Path, force: bool = False, only: set[str] | 
             stages: list[Stage] | None = None) -> Path:
     """Run stages in order. Returns the path of template.json."""
     wd = WorkDir(Path(out_root) / video_id(source))
+    dirty = False  # an upstream stage ran, so template.json would be stale
     for st in stages or STAGES:
-        if only and st.name not in only:
+        if st.name == "merge" and dirty:
+            pass
+        elif only and st.name not in only:
             continue
-        if wd.has(st.output) and not force:
+        elif wd.has(st.output) and not force:
             continue
         t0 = time.perf_counter()
         try:
@@ -45,4 +48,5 @@ def analyze(source: Path, out_root: Path, force: bool = False, only: set[str] | 
                 raise
             continue
         wd.record(st.name, "ok", time.perf_counter() - t0, warnings)
+        dirty = True
     return wd.path("template.json")

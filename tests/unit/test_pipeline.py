@@ -30,7 +30,7 @@ def test_runs_all_then_caches(tmp_path):
     analyze(src, tmp_path / "work", stages=_stages(calls))
     assert calls == ["ingest", "audio", "merge"]                       # all cached
     analyze(src, tmp_path / "work", force=True, only={"audio"}, stages=_stages(calls))
-    assert calls[-1] == "audio" and len(calls) == 4
+    assert calls[3:] == ["audio", "merge"]                             # merge re-runs after audio
 
 
 def test_non_critical_failure_is_recorded(tmp_path):
@@ -48,3 +48,25 @@ def test_critical_failure_raises(tmp_path):
     src.write_bytes(b"video")
     with pytest.raises(RuntimeError, match="ingest broke"):
         analyze(src, tmp_path / "work", stages=_stages([], fail="ingest"))
+
+
+def test_merge_reruns_after_failed_stage_recovers(tmp_path):
+    src = tmp_path / "v.mp4"
+    src.write_bytes(b"video")
+    calls = []
+    analyze(src, tmp_path / "work", stages=_stages(calls, fail="audio"))
+    assert calls == ["ingest", "audio", "merge"]
+    analyze(src, tmp_path / "work", stages=_stages(calls))
+    assert calls == ["ingest", "audio", "merge", "audio", "merge"]
+    analyze(src, tmp_path / "work", stages=_stages(calls))
+    assert len(calls) == 5                                             # fully cached now
+
+
+def test_only_stage_triggers_merge(tmp_path):
+    src = tmp_path / "v.mp4"
+    src.write_bytes(b"video")
+    calls = []
+    analyze(src, tmp_path / "work", stages=_stages(calls))
+    del calls[:]
+    analyze(src, tmp_path / "work", force=True, only={"audio"}, stages=_stages(calls))
+    assert calls == ["audio", "merge"]
