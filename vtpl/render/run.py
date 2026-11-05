@@ -1,0 +1,34 @@
+import json
+import shlex
+from pathlib import Path
+
+from vtpl.analyzers.audio import beats_of_file
+from vtpl.render.graph import build_args, plan_segments, trim_start_ms
+from vtpl.render.slots import MediaError, resolve_media
+from vtpl.render.snap import snap_template
+from vtpl.schema import validate
+from vtpl.util.ffmpeg import duration_ms, require_ffmpeg, run_ffmpeg
+
+
+def render(template_path: Path, media_dir: Path, out: Path, snap_to_beats: bool = False) -> list[str]:
+    require_ffmpeg()
+    template = json.loads(Path(template_path).read_text())
+    validate(template)
+    media = resolve_media(template, media_dir)
+    if snap_to_beats:
+        if media.music is None:
+            raise MediaError("--snap-to-beats needs a music file in the media folder")
+        bpm = beats_of_file(media.music)["bpm"]
+        if bpm is None:
+            raise MediaError(f"No beats found in {media.music.name}; render without --snap-to-beats")
+        template = snap_template(template, bpm)
+        validate(template)
+
+    segs = plan_segments(template)
+    clips = [media.clips[s.slot] for s in segs]
+    trims = [trim_start_ms(duration_ms(c), s.length_ms) for c, s in zip(clips, segs)]
+    args = build_args(segs, clips, trims, media.music, template["meta"]["duration_ms"], Path(out))
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
+    (Path(out).parent / "render_cmd.txt").write_text("ffmpeg " + shlex.join(args) + "\n")
+    run_ffmpeg(args)
+    return media.warnings
