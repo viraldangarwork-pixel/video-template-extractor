@@ -1,0 +1,8 @@
+work/
+*.mp4
+*.mov
+*.wav
+__pycache__/
+.venv/
+.pytest_cache/
+golden/
