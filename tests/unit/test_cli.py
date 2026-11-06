@@ -155,3 +155,21 @@ def test_analyze_reports_failed_optional_stages(tmp_path, monkeypatch):
     assert r.exit_code == 0
     assert "Warning: speech failed: model missing" in r.output
     assert "ingest failed" not in r.output and "second" not in r.output
+
+
+def test_render_reports_unknown_font(tmp_path, monkeypatch):
+    import copy
+    import json
+
+    from tests.unit.test_schema import GOOD, TEXT
+    from vtpl.render import run
+    monkeypatch.setattr(run, "duration_ms", lambda p: 5000)      # dummy clips: fail on the font, not on probing
+    for slot in ("clip_1", "clip_2"):
+        (tmp_path / f"{slot}.mp4").write_bytes(b"x")
+    t = copy.deepcopy(GOOD)
+    t["texts"] = [copy.deepcopy(TEXT)]
+    t["texts"][0]["style"]["font"] = "Comic-Sans"
+    tpl = tmp_path / "t.json"
+    tpl.write_text(json.dumps(t))
+    r = runner.invoke(cli.app, ["render", str(tpl), "--media", str(tmp_path)])
+    _clean_failure(r, "Error:", "texts/0/style/font: unknown font 'Comic-Sans'", "catalog.json")

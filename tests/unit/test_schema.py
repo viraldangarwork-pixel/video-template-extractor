@@ -86,3 +86,11 @@ def test_text_item_valid_and_errors():
     t["texts"][0]["end_ms"] = 5000
     with pytest.raises(TemplateError, match=r"texts\[0\] must lie within"):
         validate(t)
+
+
+def test_unknown_font_is_a_template_error():
+    t = copy.deepcopy(GOOD)
+    t["texts"] = [copy.deepcopy(TEXT)]
+    t["texts"][0]["style"]["font"] = "Comic-Sans"
+    with pytest.raises(TemplateError, match=r"texts/0/style/font: unknown font 'Comic-Sans'; see .*catalog\.json"):
+        validate(t)

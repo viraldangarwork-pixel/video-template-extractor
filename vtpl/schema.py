@@ -1,6 +1,8 @@
 
 from jsonschema import Draft202012Validator
 
+from vtpl import fontlib
+
 INT = {"type": "integer", "minimum": 0}
 MS_LIST = {"type": "array", "items": INT}
 
@@ -124,4 +126,15 @@ def validate(t: dict) -> None:
         e = errors[0]
         loc = "/".join(str(p) for p in e.absolute_path) or "(root)"
         raise TemplateError(f"template.json invalid at {loc}: {e.message}")
+    check_fonts(t)
     check_timeline(t)
+
+
+def check_fonts(t: dict) -> None:
+    """Every text's font must be in the bundled catalog (the renderer looks it up by id)."""
+    known = {e.id for e in fontlib.catalog()}
+    for i, x in enumerate(t["texts"]):
+        font = x["style"]["font"]
+        if font not in known:
+            raise TemplateError(f"texts/{i}/style/font: unknown font {font!r}; "
+                                f"see {fontlib.fonts_dir() / 'catalog.json'}")
