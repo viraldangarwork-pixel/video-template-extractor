@@ -25,6 +25,17 @@ clips: {clip_1: beach.mov}
 music: song.wav
 ```
 
+Text overlays and captions found in the source are in `template.json` under `texts` and `captions`.
+Replace them in `texts.yaml` (missing keys keep the original text; an empty value hides it):
+
+```yaml
+text_1: MY HEADLINE
+text_2: ""            # hide this overlay
+captions: new spoken line to show as karaoke captions
+```
+
+Fonts are matched against the bundled set in `vtpl/assets/fonts` (see its README for licences).
+
 Speech uses faster-whisper `small` by default; set `VTPL_WHISPER_MODEL=tiny` for speed. The first run downloads the model.
 To skip speech (and the Whisper download) entirely, run only the other stages:
 `vtpl analyze reel.mp4 --stages ingest,shots,audio,merge` (the template then has no captions).
