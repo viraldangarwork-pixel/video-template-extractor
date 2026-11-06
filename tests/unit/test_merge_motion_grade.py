@@ -50,3 +50,11 @@ def test_run_reads_motion_and_grade(tmp_path):
     warnings = merge.run(wd, tmp_path / "v.mp4")
     assert not any("motion" in w or "grade" in w for w in warnings)
     assert wd.read_json("template.json")["shots"][0]["motion"]["type"] == "zoom_in"
+
+
+@pytest.mark.parametrize("field,value", [("scale_to", 3.0), ("scale_from", 0.2), ("dx", 0.8), ("dy", -0.7)])
+def test_schema_bounds_motion(field, value):
+    t = copy.deepcopy(GOOD)
+    t["shots"][0]["motion"] = dict(ZOOM, **{field: value})
+    with pytest.raises(TemplateError, match=f"shots/0/motion/{field}"):
+        validate(t)

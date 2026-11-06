@@ -14,6 +14,9 @@ RESEED = 50
 ZOOM_MIN = 0.04            # |scale - 1| for a zoom
 PAN_MIN = 0.03             # centre movement, share of the frame, for a pan
 EDGE_FRAMES = 1            # cached frames skipped at each end of a shot
+MAX_K = 3                  # longest stretch of the measured window's motion over the whole shot
+MAX_SCALE = 1.5            # total zoom is kept within [1/MAX_SCALE, MAX_SCALE]
+MAX_DXY = 0.25             # and pans within this share of the frame on each axis
 STATIC = {"type": "static", "scale_from": 1.0, "scale_to": 1.0, "dx": 0.0, "dy": 0.0}
 
 
@@ -52,6 +55,18 @@ def track_motion(frames_gray: list[np.ndarray]) -> tuple[float, float, float] | 
     if ok < max(1, (len(frames_gray) - 1) // 2):
         return None
     return scale, dx, dy
+
+
+def bound_motion(scale: float, dx: float, dy: float) -> tuple[float, float, float]:
+    """Keep a camera move within what a re-render can reproduce without cropping to a tiny patch."""
+    return (min(MAX_SCALE, max(1 / MAX_SCALE, scale)),
+            min(MAX_DXY, max(-MAX_DXY, dx)), min(MAX_DXY, max(-MAX_DXY, dy)))
+
+
+def extrapolate(scale: float, dx: float, dy: float, k: float) -> tuple[float, float, float]:
+    """Stretch the motion measured over the analysed window by k (shot length / window length), bounded."""
+    k = min(MAX_K, max(0.0, k))
+    return bound_motion(scale ** k, dx * k, dy * k)
 
 
 def classify(scale: float, dx: float, dy: float) -> dict:
@@ -101,6 +116,6 @@ def run(wd: WorkDir, source: Path) -> list[str]:
             continue
         scale, dx, dy = res
         k = (s["end_ms"] - s["start_ms"]) / ((last - first) * 1000 / cache["fps"])   # extrapolate to the shot
-        out.append(classify(scale ** k, dx * k, dy * k))
+        out.append(classify(*extrapolate(scale, dx, dy, k)))
     wd.write_json(OUTPUT, {"shots": out})
     return warnings

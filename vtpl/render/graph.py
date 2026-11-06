@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from vtpl.analyzers.motion import MAX_DXY, MAX_SCALE
+
 XFADE = {"dissolve": "fade", "fade": "fadeblack", "flash": "fadewhite"}
 W, H, FPS = 1080, 1920, 30
 
@@ -67,8 +69,9 @@ def _filter_path(p: Path) -> str:
 
 
 def zoompan_filter(m: dict, n_frames: int) -> str:
-    s = max(m["scale_to"] / m["scale_from"], 1e-3)
-    dx, dy = float(m["dx"]), float(m["dy"])
+    # bounded like the analyser's output, so a hand-edited template can't crop down to a tiny patch
+    s = min(MAX_SCALE, max(1 / MAX_SCALE, m["scale_to"] / m["scale_from"]))
+    dx, dy = (min(MAX_DXY, max(-MAX_DXY, float(m[k]))) for k in ("dx", "dy"))
     shift = max(abs(dx), abs(dy))
     zb = 1 + shift + 0.02 if shift > 0 else 1.0
     z0 = zb * max(1.0, 1 / s)

@@ -90,3 +90,12 @@ def test_segments_carry_motion_and_static_is_dropped():
     f = build_filter(segs, False, 4000)
     assert f.split(";")[0].count("zoompan") == 1 and "zoompan" not in f.split(";")[1]
     assert "crop=1080:1920,fps=30,scale=2160:3840,zoompan=" in f.split(";")[0]     # frame rate fixed before zoompan
+
+
+def test_zoompan_filter_bounds_hand_edited_motion():
+    from vtpl.render.graph import zoompan_filter
+    wild = zoompan_filter({"type": "zoom_in", "scale_from": 0.5, "scale_to": 2.0, "dx": 0.9, "dy": -0.6}, 31)
+    assert "z='1.27000*pow(1.50000,(on/30))'" in wild                 # scale ratio 4 -> 1.5, |dx|,|dy| -> 0.25
+    assert "*0.25000*iw/zoom" in wild and "*-0.25000*ih/zoom" in wild
+    out = zoompan_filter({"type": "zoom_out", "scale_from": 1.0, "scale_to": 0.1, "dx": 0.0, "dy": 0.0}, 31)
+    assert "z='1.50000*pow(0.66667,(on/30))'" in out

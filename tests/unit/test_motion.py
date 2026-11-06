@@ -54,3 +54,14 @@ def test_shot_window_skips_transitions_and_edges():
              {"start_ms": 2000, "end_ms": 4000, "transition_in": {"type": "dissolve", "duration_ms": 400}}]
     assert shot_window(shots, 0, 15) == (1, 25)        # ends 200 ms before the dissolve's centre, minus 1 frame
     assert shot_window(shots, 1, 15) == (34, 58)
+
+
+def test_extrapolation_is_capped_and_motion_bounded():
+    from vtpl.analyzers.motion import MAX_DXY, MAX_K, MAX_SCALE, extrapolate
+    assert MAX_K == 3 and MAX_SCALE == 1.5 and MAX_DXY == 0.25
+    scale, dx, dy = extrapolate(1.05, 0.02, -0.01, 10.0)          # a short window can't be stretched 10x
+    assert scale == pytest.approx(1.05 ** 3) and dx == pytest.approx(0.06) and dy == pytest.approx(-0.03)
+    scale, dx, dy = extrapolate(0.496, 0.4, -3.30, 1.0)            # the testsrc2 case: wild estimates are bounded
+    assert scale == pytest.approx(1 / 1.5) and dx == 0.25 and dy == -0.25
+    assert extrapolate(2.0, 0.0, 0.0, 1.2)[0] == 1.5
+    assert extrapolate(1.1, 0.01, 0.0, 1.5) == pytest.approx((1.1 ** 1.5, 0.015, 0.0))

@@ -9,6 +9,8 @@ MS_LIST = {"type": "array", "items": INT}
 ANIMS = ["none", "pop", "fade", "slide", "typewriter"]
 UNIT = {"type": "number", "minimum": 0, "maximum": 1}
 OFFSET = {"type": "object", "required": ["dx", "dy"], "properties": {"dx": {"type": "number"}, "dy": {"type": "number"}}}
+SCALE = {"type": "number", "minimum": 0.5, "maximum": 2}      # camera zoom factor
+SHIFT = {"type": "number", "minimum": -0.5, "maximum": 0.5}   # camera pan, share of the frame
 TEXT_ITEM = {
     "type": "object",
     "required": ["id", "slot", "sample", "kind", "start_ms", "end_ms", "box", "style", "anim"],
@@ -90,9 +92,7 @@ TEMPLATE_SCHEMA = {
                 "motion": {
                     "type": "object", "required": ["type", "scale_from", "scale_to", "dx", "dy"],
                     "properties": {"type": {"enum": ["static", "zoom_in", "zoom_out", "pan"]},
-                                   "scale_from": {"type": "number", "exclusiveMinimum": 0},
-                                   "scale_to": {"type": "number", "exclusiveMinimum": 0},
-                                   "dx": {"type": "number"}, "dy": {"type": "number"}},
+                                   "scale_from": SCALE, "scale_to": SCALE, "dx": SHIFT, "dy": SHIFT},
                 },
                 "grade": {
                     "type": "object", "required": ["luma_mean", "luma_std", "chroma"],
