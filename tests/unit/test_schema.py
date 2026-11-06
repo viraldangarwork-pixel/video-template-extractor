@@ -104,3 +104,14 @@ def test_lowercase_hex_colours_are_accepted():
     t["texts"][0]["style"]["color"] = "#ffcc0"
     with pytest.raises(TemplateError, match="texts/0/style/color"):
         validate(t)
+
+
+def test_dangling_caption_style_ref_is_rejected():
+    t = copy.deepcopy(GOOD)
+    t["captions"]["style_ref"] = "c1"
+    with pytest.raises(TemplateError, match="captions/style_ref"):
+        validate(t)
+    cap = copy.deepcopy(TEXT)
+    cap.update(id="c1", slot="captions", kind="caption")
+    t["texts"] = [cap]
+    validate(t)

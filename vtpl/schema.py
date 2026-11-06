@@ -127,7 +127,15 @@ def validate(t: dict) -> None:
         loc = "/".join(str(p) for p in e.absolute_path) or "(root)"
         raise TemplateError(f"template.json invalid at {loc}: {e.message}")
     check_fonts(t)
+    check_style_ref(t)
     check_timeline(t)
+
+
+def check_style_ref(t: dict) -> None:
+    """captions.style_ref, when set, must name one of the texts (the renderer styles captions after it)."""
+    ref = t["captions"]["style_ref"]
+    if ref is not None and ref not in {x["id"] for x in t["texts"]}:
+        raise TemplateError(f"captions/style_ref: {ref!r} is not the id of any item in texts")
 
 
 def check_fonts(t: dict) -> None:
