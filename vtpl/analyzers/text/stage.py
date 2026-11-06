@@ -16,6 +16,8 @@ STYLE_FRAMES = 3
 STYLE_PAD = 0.25      # style crops extend the box by this share of its height
 BOX_PAD = 0.25        # timing / contrast crops: the box extended by this share of its height
 EDGE_FILL_SHARE = 0.5 # a first / last frame with this share of the text's fill pixels shows the text
+BAND_SCALE = 0.5      # band crops (slide geometry, fill counts) are kept at this scale to save memory
+MAX_TRACKS_PER_PASS = 8   # crops of at most this many tracks are held at once (one video pass each)
 
 
 def _px(box, w, h):
@@ -56,6 +58,13 @@ def _style_frames(wd: WorkDir, t: dict, cache: dict, ratio: int) -> list[int]:
     return [o["frame"] for o in sorted(inner, key=sharpness, reverse=True)[:STYLE_FRAMES]]
 
 
+def plan_batches(spans: dict[str, tuple[int, int]], max_tracks: int = MAX_TRACKS_PER_PASS) -> list[list[str]]:
+    """Group tracks, in order of their first needed frame, into batches of at most `max_tracks`;
+    each batch is one read_crops pass, so memory is bounded by the batch, not the whole video."""
+    order = sorted(spans, key=lambda k: spans[k])
+    return [order[i:i + max_tracks] for i in range(0, len(order), max_tracks)]
+
+
 def run(wd: WorkDir, source: Path) -> list[str]:
     meta = wd.read_json("meta.json")
     if not wd.has(fr.OUTPUT):
@@ -70,28 +79,39 @@ def run(wd: WorkDir, source: Path) -> list[str]:
 
     last = ms_to_frame(meta["duration_ms"], fps) - 1
     win, an = ms_to_frame(WINDOW_MS, fps), ms_to_frame(ANIM_MS, fps)
-    requests: dict[int, list] = defaultdict(list)
-    plans = {}
+    plans, track_requests = {}, {}
     for t in tracks:
         r = _px(t["box"], W, H)
         s0, s1 = t["obs"][0]["frame"], t["obs"][-1]["frame"]
         start_ids = list(range(max(0, s0 - ms_to_frame(start_window_ms(t), fps)), min(last, s0 + an) + 1))
         end_ids = list(range(max(0, s1 - an), min(last, s1 + win) + 1))
         style_ids = _style_frames(wd, t, cache, ratio)
+        req = []
         for f in sorted(set(start_ids) | set(end_ids)):
-            requests[f].append((t["id"] + ":band", _band(r, W)))
-            requests[f].append((t["id"] + ":box", _expand(r, BOX_PAD)))
+            req.append((f, (t["id"] + ":band", _band(r, W), BAND_SCALE)))
+            req.append((f, (t["id"] + ":box", _expand(r, BOX_PAD))))
         for f in style_ids:
-            requests[f].append((t["id"] + ":style", _expand(r, STYLE_PAD)))
+            req.append((f, (t["id"] + ":style", _expand(r, STYLE_PAD))))
         plans[t["id"]] = (start_ids, end_ids, style_ids, s0, s1, last)
-    crops = fr.read_crops(wd.path("norm.mp4"), dict(requests))
+        track_requests[t["id"]] = req
 
-    out, warnings = [], []
-    for t in tracks:
-        try:
-            out.append(_analyse(t, plans[t["id"]], crops, meta))
-        except Exception as e:
-            warnings.append(f"{t['id']} ({t['text']!r}) skipped: {e}")
+    results, warnings = {}, []
+    spans = {k: (min(f for f, _ in req), max(f for f, _ in req)) for k, req in track_requests.items()}
+    by_id = {t["id"]: t for t in tracks}
+    for batch in plan_batches(spans):
+        requests: dict[int, list] = defaultdict(list)
+        for k in batch:
+            for f, rq in track_requests[k]:
+                requests[f].append(rq)
+        crops = fr.read_crops(wd.path("norm.mp4"), dict(requests))
+        for k in batch:
+            t = by_id[k]
+            try:
+                results[k] = _analyse(t, plans[k], crops, meta)
+            except Exception as e:
+                warnings.append(f"{k} ({t['text']!r}) skipped: {e}")
+        del crops
+    out = [results[t["id"]] for t in tracks if t["id"] in results]
     wd.write_json(OUTPUT, {"tracks": out})
     return warnings
 
@@ -115,6 +135,7 @@ def _analyse(t: dict, plan, crops: dict, meta: dict) -> dict:
     start_box, end_box = [box[f] for f in start_ids], [box[f] for f in end_ids]
     # Fill-colour pixels in the band also count: they find text away from its box (a slide).
     counts = {f: int(anim.fill_mask(band[f], fill).sum()) for f in set(start_ids) | set(end_ids)}
+    bw, bh = W * BAND_SCALE, H * BAND_SCALE                  # band geometry is in downscaled pixels
     if start_ids[0] == 0 and _shows_text(box[0], box[s0], fill):
         f_start = 0                                          # on screen from the first frame: no empty frame to compare
     else:
@@ -136,9 +157,9 @@ def _analyse(t: dict, plan, crops: dict, meta: dict) -> dict:
     none = {"kind": "none", "ms": 0}
     # A text already on screen at the first frame (or still on at the last) shows no animation there.
     a_in = none if f_start == 0 else anim.classify(anim.measure(
-        [band[f] for f in in_ids], fill, band[start_ids[0]], [box[f] for f in in_ids], start_box[0]), W, H, step)
+        [band[f] for f in in_ids], fill, band[start_ids[0]], [box[f] for f in in_ids], start_box[0]), bw, bh, step)
     a_out = none if f_end == last else anim.classify(anim.measure(
-        [band[f] for f in out_ids], fill, band[end_ids[-1]], [box[f] for f in out_ids], end_box[-1]), W, H, step)
+        [band[f] for f in out_ids], fill, band[end_ids[-1]], [box[f] for f in out_ids], end_box[-1]), bw, bh, step)
     anim_doc = {"in": a_in["kind"], "in_ms": a_in["ms"], "out": a_out["kind"], "out_ms": a_out["ms"]}
     if "from" in a_in:
         anim_doc["in_from"] = a_in["from"]

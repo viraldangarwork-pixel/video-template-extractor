@@ -37,3 +37,10 @@ def test_read_crops_single_pass(cards_video):
     assert out["b"][50].shape == (40, 40, 3)
     assert out["c"][130].shape == (120, 80, 3)                                        # clamped at frame edge
     assert frames.read_crops(cards_video["path"], {}) == {}
+
+
+@pytest.mark.slow
+def test_read_crops_can_downscale(cards_video):
+    out = frames.read_crops(cards_video["path"], {0: [("a", (0, 0, 100, 60), 0.5), ("b", (0, 0, 100, 60))]})
+    assert out["a"][0].shape == (30, 50, 3) and out["b"][0].shape == (60, 100, 3)
+    assert out["a"][0][..., 2].mean() > 200
