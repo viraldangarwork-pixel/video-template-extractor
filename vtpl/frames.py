@@ -31,6 +31,31 @@ def cache_time_ms(i: int, fps: int = CACHE_FPS) -> int:
     return round(i * 1000 / fps)
 
 
+CONTENT_INSET = 2         # cache pixels kept clear of the padding edge when measuring the picture
+
+
+def cached_content(meta: dict) -> Rect:
+    """The source picture's area (meta.json `content`, without the black padding) in cache pixels.
+    A meta.json written before `content` existed means the whole frame."""
+    c = meta.get("content")
+    if not c:
+        return 0, 0, CACHE_W, CACHE_H
+    sx, sy = CACHE_W / meta["w"], CACHE_H / meta["h"]
+    x0, y0 = round(c["x"] * sx), round(c["y"] * sy)
+    x1, y1 = round((c["x"] + c["w"]) * sx), round((c["y"] + c["h"]) * sy)
+    if x0 > 0 or x1 < CACHE_W:
+        x0, x1 = x0 + CONTENT_INSET, x1 - CONTENT_INSET
+    if y0 > 0 or y1 < CACHE_H:
+        y0, y1 = y0 + CONTENT_INSET, y1 - CONTENT_INSET
+    if x1 - x0 < 16 or y1 - y0 < 16:
+        return 0, 0, CACHE_W, CACHE_H
+    return x0, y0, x1 - x0, y1 - y0
+
+
+def content_of(wd: WorkDir) -> Rect:
+    return cached_content(wd.read_json("meta.json")) if wd.has("meta.json") else (0, 0, CACHE_W, CACHE_H)
+
+
 def cached_frame(wd: WorkDir, i: int) -> np.ndarray:
     path = wd.path("frames") / f"{i:05d}.jpg"
     img = cv2.imread(str(path))

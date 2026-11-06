@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable
 
 from vtpl import frames, ingest, merge
-from vtpl.analyzers import audio, shots, speech
+from vtpl.analyzers import audio, grade, motion, shots, speech
 from vtpl.analyzers.text import stage as text_stage
 from vtpl.util.workdir import WorkDir, video_id
 
@@ -22,6 +22,8 @@ STAGES = [
     Stage("ingest", ingest.OUTPUT, ingest.run),
     Stage("frames", frames.OUTPUT, frames.run),
     Stage("shots", shots.OUTPUT, shots.run),
+    Stage("motion", motion.OUTPUT, motion.run),
+    Stage("grade", grade.OUTPUT, grade.run),
     Stage("audio", audio.OUTPUT, audio.run),
     Stage("speech", speech.OUTPUT, speech.run),
     Stage("text", text_stage.OUTPUT, text_stage.run),

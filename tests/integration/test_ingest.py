@@ -17,6 +17,7 @@ def test_ingest_normalises_and_extracts_audio(tmp_path, small_cards_video):
     assert wd.has("audio.wav")
     meta = wd.read_json("meta.json")
     assert meta["has_audio"] is True and meta["fps"] == 30
+    assert meta["content"] == {"x": 0, "y": 0, "w": 1080, "h": 1920}       # 9:16 source: no padding
     assert abs(meta["duration_ms"] - 6000) <= 50
 
 

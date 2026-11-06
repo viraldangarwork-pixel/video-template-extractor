@@ -9,6 +9,8 @@ MS_LIST = {"type": "array", "items": INT}
 ANIMS = ["none", "pop", "fade", "slide", "typewriter"]
 UNIT = {"type": "number", "minimum": 0, "maximum": 1}
 OFFSET = {"type": "object", "required": ["dx", "dy"], "properties": {"dx": {"type": "number"}, "dy": {"type": "number"}}}
+SCALE = {"type": "number", "minimum": 0.5, "maximum": 2}      # camera zoom factor
+SHIFT = {"type": "number", "minimum": -0.5, "maximum": 0.5}   # camera pan, share of the frame
 TEXT_ITEM = {
     "type": "object",
     "required": ["id", "slot", "sample", "kind", "start_ms", "end_ms", "box", "style", "anim"],
@@ -87,6 +89,15 @@ TEMPLATE_SCHEMA = {
                     "type": "object", "required": ["type", "duration_ms"],
                     "properties": {"type": {"enum": ["cut", "fade", "dissolve", "flash"]}, "duration_ms": INT},
                 },
+                "motion": {
+                    "type": "object", "required": ["type", "scale_from", "scale_to", "dx", "dy"],
+                    "properties": {"type": {"enum": ["static", "zoom_in", "zoom_out", "pan"]},
+                                   "scale_from": SCALE, "scale_to": SCALE, "dx": SHIFT, "dy": SHIFT},
+                },
+                "grade": {
+                    "type": "object", "required": ["luma_mean", "luma_std", "chroma"],
+                    "properties": {"luma_mean": UNIT, "luma_std": UNIT, "chroma": UNIT},
+                },
             },
         },
     },
@@ -127,7 +138,15 @@ def validate(t: dict) -> None:
         loc = "/".join(str(p) for p in e.absolute_path) or "(root)"
         raise TemplateError(f"template.json invalid at {loc}: {e.message}")
     check_fonts(t)
+    check_style_ref(t)
     check_timeline(t)
+
+
+def check_style_ref(t: dict) -> None:
+    """captions.style_ref, when set, must name one of the texts (the renderer styles captions after it)."""
+    ref = t["captions"]["style_ref"]
+    if ref is not None and ref not in {x["id"] for x in t["texts"]}:
+        raise TemplateError(f"captions/style_ref: {ref!r} is not the id of any item in texts")
 
 
 def check_fonts(t: dict) -> None:
