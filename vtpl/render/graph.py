@@ -31,6 +31,15 @@ def _dur(tin: dict) -> int:
     return 0 if tin["type"] == "cut" else frames(tin["duration_ms"])
 
 
+def stretch_motion(m: dict, f: float) -> dict:
+    """Motion measured over a shot, stretched to a segment f times as long (the shot plus its transition
+    overlaps), so the camera moves at the measured rate."""
+    if f == 1:
+        return m
+    s = m["scale_to"] / m["scale_from"]
+    return {**m, "scale_to": m["scale_from"] * s ** f, "dx": m["dx"] * f, "dy": m["dy"] * f}
+
+
 def plan_segments(template: dict) -> list[Segment]:
     shots = template["shots"]
     segs = []
@@ -40,9 +49,9 @@ def plan_segments(template: dict) -> list[Segment]:
         f0, f1 = frames(s["start_ms"]), frames(s["end_ms"])
         length = (f1 - f0) + d_in // 2 + (d_out - d_out // 2)
         m = s.get("motion")
+        m = stretch_motion(m, length / (f1 - f0)) if m and m["type"] != "static" else None
         segs.append(Segment(s["slot"], length, s["transition_in"]["type"] if d_in else "cut", d_in,
-                            f0 - d_in // 2, motion=m if m and m["type"] != "static" else None,
-                            grade=s.get("grade")))
+                            f0 - d_in // 2, motion=m, grade=s.get("grade")))
     return segs
 
 

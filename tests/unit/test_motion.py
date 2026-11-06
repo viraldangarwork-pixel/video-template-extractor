@@ -112,3 +112,14 @@ def test_steady_zoom_and_line_fit():
     assert steady_motion(wobble, 20) == (1.0, 0.0, 0.0)
     steady = np.array([[i, math.log(1.01), 0.002, -0.001] for i in range(20)])
     assert steady_motion(steady, 20) == pytest.approx((1.01 ** 20, 0.04, -0.02))
+
+
+def test_untracked_pairs_are_extrapolated_not_counted_as_still():
+    from vtpl.analyzers.motion import steady_motion
+    rows = [[i, math.log(1.01), 0.002, 0.0] for i in list(range(5)) + list(range(10, 20))]   # pairs 5-9 lost
+    assert steady_motion(np.array(rows), 20) == pytest.approx((1.01 ** 20, 0.04, 0.0))
+    base = texture()
+    frames = [warp(base, tx=4 * i) for i in range(10)]
+    frames[5] = np.zeros_like(base)                # two pairs can't be tracked
+    scale, dx, dy = track_motion(frames)
+    assert dx == pytest.approx(36 / W, abs=0.01)

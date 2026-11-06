@@ -58,3 +58,16 @@ def test_schema_bounds_motion(field, value):
     t["shots"][0]["motion"] = dict(ZOOM, **{field: value})
     with pytest.raises(TemplateError, match=f"shots/0/motion/{field}"):
         validate(t)
+
+
+def test_run_warns_when_motion_or_grade_counts_mismatch(tmp_path):
+    from vtpl.util.workdir import WorkDir
+    wd = WorkDir(tmp_path / "abc")
+    wd.write_json("meta.json", META)
+    wd.write_json("shots.json", SHOTS)
+    wd.write_json("motion.json", {"shots": [ZOOM]})
+    wd.write_json("grade.json", {"shots": [GRADE, GRADE, GRADE]})
+    warnings = merge.run(wd, tmp_path / "v.mp4")
+    assert any("motion.json has 1 shot" in w and "2" in w for w in warnings), warnings
+    assert any("grade.json has 3 shots" in w for w in warnings), warnings
+    assert "motion" not in wd.read_json("template.json")["shots"][0]

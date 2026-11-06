@@ -73,7 +73,7 @@ def steady_motion(series: np.ndarray, n_pairs: float) -> tuple[float, float, flo
     """(scale, dx, dy) over n_pairs frame pairs, from per-pair steps (rows: pair index, dlog scale, dx, dy).
     Zoom (log scale) and centre position are each fitted with a straight line over time; a path that wanders
     back and forth (handheld shake) fits badly and counts as no motion."""
-    t = np.concatenate([[0.0], series[:, 0] + 1])
+    t = np.arange(len(series) + 1, dtype=float)      # per tracked pair: lost pairs are extrapolated over
     path = np.vstack([np.zeros(3), np.cumsum(series[:, 1:], axis=0)])
     zoom, r2_zoom = _line_fit(t, path[:, :1])
     shift, r2_shift = _line_fit(t, path[:, 1:])
@@ -104,11 +104,12 @@ def window_motion(frames_gray: list[np.ndarray]) -> tuple[float, float, float] |
 
 def track_motion(frames_gray: list[np.ndarray], mask: np.ndarray | None = None,
                  ransac_px: float = RANSAC_PX) -> tuple[float, float, float] | None:
-    """Summed (scale, centre dx, centre dy) over the tracked frame pairs, or None if too little can be tracked."""
+    """Total (scale, centre dx, centre dy) across the frames, or None if too little can be tracked. Pairs that
+    could not be tracked are assumed to move like the tracked ones."""
     series = track_series(frames_gray, mask, ransac_px)
     if series is None:
         return None
-    total = series[:, 1:].sum(axis=0)
+    total = series[:, 1:].sum(axis=0) * (len(frames_gray) - 1) / len(series)
     return math.exp(total[0]), float(total[1]), float(total[2])
 
 

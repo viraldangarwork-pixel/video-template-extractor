@@ -94,4 +94,6 @@ def eval_cmd(
         result = evaluate(golden, out, only, force=force)
     except (FFmpegError, TemplateError, ValueError, OSError) as e:
         _fail(str(e))
+    for w in result["warnings"]:
+        typer.echo(f"Warning: {w}")
     typer.echo(format_report(result["videos"], result["summary"]))

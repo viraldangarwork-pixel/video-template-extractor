@@ -46,6 +46,10 @@ To skip speech (and the Whisper download) entirely, run only the other stages:
 
 Each shot also gets `motion` (zoom in/out, pan or static) and `grade` (target brightness, contrast and
 colour). `vtpl render` reproduces the camera move and matches each of your clips to the shot's look.
+Only steady moves count: handheld shake reads as static, burnt-in text and logos are ignored while
+measuring, and moves are kept within a 1.5x zoom and a quarter-frame pan. For letterboxed sources
+(e.g. 16:9 video in the 9:16 frame) only the picture is measured; ingest records where it sits as
+`content` in `meta.json`.
 
 Check accuracy on your own hand-checked videos:
 
@@ -54,7 +58,16 @@ vtpl eval --golden ./golden          # golden/<name>.mp4 + golden/<name>.expecte
 ```
 
 `<name>.expected.json` may contain `cuts_ms`, `bpm`, `texts` (`text`, `start_ms`, `end_ms`) and
-`motion` (`shot` (1-based), `type`). Results are printed and saved to `work/eval_report.json`.
+`motion` (`shot` (1-based), `type`). Every expected file is checked before any analysis; an expected
+file without a video is skipped with a warning. Each video is analysed afresh (`--no-force` reuses
+cached stage outputs). Results, including any analysis stages that failed, are printed and saved to
+`work/eval_report.json`.
+
+Known limits of motion and grade:
+
+- Saturation tends to land about 10 % short of the target.
+- Grade statistics are measured on the whole clip, not the part a zoom crops to.
+- `motion.type` is mostly informational: the renderer uses the scale and offsets.
 
 ## Test
 

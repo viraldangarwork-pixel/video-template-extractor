@@ -111,7 +111,15 @@ def run(wd: WorkDir, source: Path) -> list[str]:
             optional[name] = wd.read_json(name)
         else:
             warnings.append(f"{name} missing: {effect}")
-    template = build_template(wd.read_json("meta.json"), wd.read_json("shots.json"),
+    shots_doc = wd.read_json("shots.json")
+    n = len(shots_doc["shots"])
+    for name, what in (("motion.json", "camera motion"), ("grade.json", "colour grade")):
+        doc = optional.get(name)
+        if doc is not None and _per_shot(doc, n) is None:
+            items = doc.get("shots") if isinstance(doc, dict) else None
+            got = f"{len(items)} shot{'s' if len(items) != 1 else ''}" if isinstance(items, list) else "no shot list"
+            warnings.append(f"{name} has {got} but shots.json has {n}: {what} left out (re-run that stage)")
+    template = build_template(wd.read_json("meta.json"), shots_doc,
                               optional.get("audio.json"), optional.get("speech.json"), source_id=wd.root.name,
                               text_doc=optional.get("text.json"), motion_doc=optional.get("motion.json"),
                               grade_doc=optional.get("grade.json"))
