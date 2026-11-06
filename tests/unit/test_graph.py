@@ -58,3 +58,14 @@ def test_build_args_seeks_each_clip_input():
                          "-ss", "1.500", "-stream_loop", "-1", "-i", "b.mp4",
                          "-ss", "0.250", "-stream_loop", "-1", "-i", "c.mp4"]
     assert args[18:22] == ["-stream_loop", "-1", "-i", "m.mp3"]
+
+
+def test_subtitles_filter_before_final_trim(tmp_path):
+    from vtpl.render.graph import build_filter, plan_segments
+    ass = tmp_path / "a b:c" / "out.ass"
+    f = build_filter(plan_segments(T), False, 4000, ass=ass, fonts_dir=tmp_path / "fonts")
+    tail = f.split(";")[-1]
+    assert tail.startswith("[j2]subtitles=filename=") and "fontsdir=" in tail
+    assert "a b\\\\:c" in tail                            # ':' -> '\:' (option level) -> '\\:' (graph level)
+    assert tail.endswith("trim=duration=4.000,setpts=PTS-STARTPTS[vout]")
+    assert "subtitles" not in build_filter(plan_segments(T), False, 4000)

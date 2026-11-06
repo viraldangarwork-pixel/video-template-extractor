@@ -52,7 +52,18 @@ def _f(n: int) -> str:
     return f"{n / FPS:.6f}"
 
 
-def build_filter(segs: list[Segment], has_music: bool, duration_ms: int) -> str:
+def _filter_path(p: Path) -> str:
+    """Escape a path for an option value inside a filtergraph (two escaping levels)."""
+    s = str(Path(p).resolve())
+    for ch in "\\':":
+        s = s.replace(ch, "\\" + ch)
+    for ch in "\\'[],;":
+        s = s.replace(ch, "\\" + ch)
+    return s
+
+
+def build_filter(segs: list[Segment], has_music: bool, duration_ms: int,
+                 ass: Path | None = None, fonts_dir: Path | None = None) -> str:
     parts = [
         f"[{i}:v]setpts=PTS-STARTPTS,"
         f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={FPS},"
@@ -68,7 +79,13 @@ def build_filter(segs: list[Segment], has_music: bool, duration_ms: int) -> str:
             parts.append(f"{cur}[s{i}]xfade=transition={XFADE[seg.trans_in]}:"
                          f"duration={_f(seg.trans_in_frames)}:offset={_f(seg.offset_frames)}{nxt}")
         cur = nxt
-    parts.append(f"{cur}trim=duration={_s(duration_ms)},setpts=PTS-STARTPTS[vout]")
+    subs = ""
+    if ass is not None:
+        subs = f"subtitles=filename={_filter_path(ass)}"
+        if fonts_dir is not None:
+            subs += f":fontsdir={_filter_path(fonts_dir)}"
+        subs += ","
+    parts.append(f"{cur}{subs}trim=duration={_s(duration_ms)},setpts=PTS-STARTPTS[vout]")
     if has_music:
         n = len(segs)
         fade_at = max(0, duration_ms - 300)
@@ -78,13 +95,13 @@ def build_filter(segs: list[Segment], has_music: bool, duration_ms: int) -> str:
 
 
 def build_args(segs: list[Segment], clips: list[Path], trims_ms: list[int], music: Path | None,
-               duration_ms: int, out: Path) -> list[str]:
+               duration_ms: int, out: Path, ass: Path | None = None, fonts_dir: Path | None = None) -> list[str]:
     args: list[str] = []
     for p, t0 in zip(clips, trims_ms):
         args += ["-ss", _s(t0), "-stream_loop", "-1", "-i", str(p)]    # input seek: no decoding up to t0
     if music is not None:
         args += ["-stream_loop", "-1", "-i", str(music)]
-    args += ["-filter_complex", build_filter(segs, music is not None, duration_ms), "-map", "[vout]"]
+    args += ["-filter_complex", build_filter(segs, music is not None, duration_ms, ass, fonts_dir), "-map", "[vout]"]
     if music is not None:
         args += ["-map", "[aout]", "-c:a", "aac", "-b:a", "192k"]
     args += ["-c:v", "libx264", "-crf", "20", "-preset", "medium", "-pix_fmt", "yuv420p",

@@ -17,7 +17,7 @@ def _stages(calls, fail=None, with_shots=False):
 
 
 def test_default_stage_order():
-    assert STAGE_NAMES == ["ingest", "shots", "audio", "speech", "merge"]
+    assert STAGE_NAMES == ["ingest", "frames", "shots", "audio", "speech", "text", "merge"]
 
 
 def test_runs_all_then_caches(tmp_path):

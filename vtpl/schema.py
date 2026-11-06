@@ -1,8 +1,41 @@
 
 from jsonschema import Draft202012Validator
 
+from vtpl import fontlib
+
 INT = {"type": "integer", "minimum": 0}
 MS_LIST = {"type": "array", "items": INT}
+
+ANIMS = ["none", "pop", "fade", "slide", "typewriter"]
+UNIT = {"type": "number", "minimum": 0, "maximum": 1}
+OFFSET = {"type": "object", "required": ["dx", "dy"], "properties": {"dx": {"type": "number"}, "dy": {"type": "number"}}}
+TEXT_ITEM = {
+    "type": "object",
+    "required": ["id", "slot", "sample", "kind", "start_ms", "end_ms", "box", "style", "anim"],
+    "properties": {
+        "id": {"type": "string"}, "slot": {"type": "string"}, "sample": {"type": "string"},
+        "kind": {"enum": ["overlay", "caption"]}, "start_ms": INT, "end_ms": INT,
+        "box": {"type": "object", "required": ["x", "y", "w", "h"],
+                "properties": {"x": UNIT, "y": UNIT, "w": UNIT, "h": UNIT}},
+        "style": {
+            "type": "object",
+            "required": ["font", "font_confidence", "size_px", "color", "stroke", "shadow"],
+            "properties": {
+                "font": {"type": "string"}, "font_guess": {"type": "string"},
+                "font_confidence": {"type": "number"}, "size_px": {"type": "integer", "minimum": 1},
+                "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+                "stroke": {"oneOf": [{"type": "null"}, {
+                    "type": "object", "required": ["color", "px"],
+                    "properties": {"color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+                                   "px": {"type": "integer", "minimum": 0}}}]},
+                "shadow": {"type": "boolean"},
+            },
+        },
+        "anim": {"type": "object", "required": ["in", "in_ms", "out", "out_ms"],
+                 "properties": {"in": {"enum": ANIMS}, "out": {"enum": ANIMS}, "in_ms": INT, "out_ms": INT,
+                                "in_from": OFFSET, "out_to": OFFSET}},
+    },
+}
 
 TEMPLATE_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -31,7 +64,7 @@ TEMPLATE_SCHEMA = {
             },
         },
         "shots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/shot"}},
-        "texts": {"type": "array", "items": {"type": "object"}},
+        "texts": {"type": "array", "items": TEXT_ITEM},
         "captions": {
             "type": "object",
             "required": ["style_ref", "words"],
@@ -82,6 +115,9 @@ def check_timeline(t: dict) -> None:
             raise TemplateError(f"shots[{i}].transition_in.duration_ms ({d}) must be shorter than both neighbouring shots")
     if shots[-1]["end_ms"] != dur:
         raise TemplateError(f"last shot must end at meta.duration_ms ({dur})")
+    for i, x in enumerate(t["texts"]):
+        if not 0 <= x["start_ms"] < x["end_ms"] <= dur:
+            raise TemplateError(f"texts[{i}] must lie within 0..{dur} ms with start before end")
 
 
 def validate(t: dict) -> None:
@@ -90,4 +126,15 @@ def validate(t: dict) -> None:
         e = errors[0]
         loc = "/".join(str(p) for p in e.absolute_path) or "(root)"
         raise TemplateError(f"template.json invalid at {loc}: {e.message}")
+    check_fonts(t)
     check_timeline(t)
+
+
+def check_fonts(t: dict) -> None:
+    """Every text's font must be in the bundled catalog (the renderer looks it up by id)."""
+    known = {e.id for e in fontlib.catalog()}
+    for i, x in enumerate(t["texts"]):
+        font = x["style"]["font"]
+        if font not in known:
+            raise TemplateError(f"texts/{i}/style/font: unknown font {font!r}; "
+                                f"see {fontlib.fonts_dir() / 'catalog.json'}")

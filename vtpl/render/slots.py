@@ -65,5 +65,20 @@ def resolve_media(template: dict, media_dir: Path) -> Media:
     if music is None:
         warnings.append("No music file found; output will be silent")
 
-    texts = {k: "" if v is None else str(v) for k, v in cfg.items() if str(k).startswith("text_")}
+    texts = {k: "" if v is None else str(v) for k, v in cfg.items()
+             if str(k).startswith("text_") or k == "captions"}
+    warnings += text_warnings(template, texts)
     return Media(clips, music, texts, warnings)
+
+
+def text_warnings(template: dict, texts: dict[str, str]) -> list[str]:
+    """texts.yaml entries that will have no effect on the render."""
+    slots = [x["slot"] for x in template.get("texts", []) if x["kind"] == "overlay"]
+    out = []
+    for key in texts:
+        if key != "captions" and key not in slots:
+            out.append(f"texts.yaml: {key} matches no text in the template "
+                       f"({'it has ' + ', '.join(slots) if slots else 'it has none'})")
+    if "captions" in texts and not template.get("captions", {}).get("words"):
+        out.append("texts.yaml: captions ignored, the template has no speech words to time them")
+    return out

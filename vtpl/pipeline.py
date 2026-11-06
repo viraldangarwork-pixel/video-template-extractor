@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from vtpl import ingest, merge
+from vtpl import frames, ingest, merge
 from vtpl.analyzers import audio, shots, speech
+from vtpl.analyzers.text import stage as text_stage
 from vtpl.util.workdir import WorkDir, video_id
 
 CRITICAL = {"ingest", "shots", "merge"}
@@ -19,9 +20,11 @@ class Stage:
 
 STAGES = [
     Stage("ingest", ingest.OUTPUT, ingest.run),
+    Stage("frames", frames.OUTPUT, frames.run),
     Stage("shots", shots.OUTPUT, shots.run),
     Stage("audio", audio.OUTPUT, audio.run),
     Stage("speech", speech.OUTPUT, speech.run),
+    Stage("text", text_stage.OUTPUT, text_stage.run),
     Stage("merge", merge.OUTPUT, merge.run),
 ]
 STAGE_NAMES = [s.name for s in STAGES]
