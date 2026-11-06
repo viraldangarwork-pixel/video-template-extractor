@@ -7,6 +7,7 @@ from vtpl.analyzers.text.style import lab_image, to_lab
 
 FILL_TOL = 18.0          # Lab distance for a pixel to count as fill colour
 MIN_PIXELS = 20
+POP_TOGETHER = 0.06      # a pop scales width and height together: their ratios differ by at most this
 
 
 def fill_mask(crop: np.ndarray, fill_bgr) -> np.ndarray:
@@ -61,11 +62,17 @@ def classify(ms: list[dict], frame_w: int, frame_h: int, step_ms: float) -> dict
     dy = (valid[0]["cy"] - ref["cy"]) / frame_h
     cr = [m["contrast"] / ref["contrast"] if ref["contrast"] > 0 else 1.0 for m in ms]
     extra = {}
+    together = [abs(w - h) <= POP_TOGETHER for w, h in zip(wr, hr)]
+    # A fade starts faint: text visible (contrast) before any pixel reaches the fill colour, and
+    # then all glyphs at once, at full width (a shrinking pop also goes below MIN_PIXELS, but small).
+    faint_ramp = ms[0]["n"] == 0 and wr[0] >= 0.9 and cr[0] <= 0.6 and _nondecreasing(cr, 0.05)
     if len(valid) >= 3 and wr[0] <= 0.6 and all(abs(h - 1) <= 0.1 for h in hr) and _nondecreasing(wr, 0.05):
         kind = "typewriter"
     elif (abs(dx) >= 0.05 or abs(dy) >= 0.05) and all(abs(h - 1) <= 0.15 for h in hr):
         kind, extra = "slide", {"from": {"dx": round(dx, 3), "dy": round(dy, 3)}}
-    elif max(hr) >= 1.05 or hr[0] <= 0.9:
+    elif faint_ramp:
+        kind = "fade"
+    elif any(h >= 1.05 and t for h, t in zip(hr, together)) or (hr[0] <= 0.9 and together[0]):
         kind = "pop"
     elif cr[0] <= 0.6 and _nondecreasing(cr, 0.05):
         kind = "fade"
