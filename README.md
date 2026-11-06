@@ -44,6 +44,18 @@ Speech uses faster-whisper `small` by default; set `VTPL_WHISPER_MODEL=tiny` for
 To skip speech (and the Whisper download) entirely, run only the other stages:
 `vtpl analyze reel.mp4 --stages ingest,shots,audio,merge` (the template then has no captions).
 
+Each shot also gets `motion` (zoom in/out, pan or static) and `grade` (target brightness, contrast and
+colour). `vtpl render` reproduces the camera move and matches each of your clips to the shot's look.
+
+Check accuracy on your own hand-checked videos:
+
+```bash
+vtpl eval --golden ./golden          # golden/<name>.mp4 + golden/<name>.expected.json
+```
+
+`<name>.expected.json` may contain `cuts_ms`, `bpm`, `texts` (`text`, `start_ms`, `end_ms`) and
+`motion` (`shot` (1-based), `type`). Results are printed and saved to `work/eval_report.json`.
+
 ## Test
 
 ```bash
