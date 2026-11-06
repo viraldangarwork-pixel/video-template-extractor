@@ -101,6 +101,7 @@ def run(wd: WorkDir, source: Path) -> list[str]:
         raise FileNotFoundError(f"{fr.OUTPUT} missing: run the frames stage first")
     cache = wd.read_json(fr.OUTPUT)
     shots = wd.read_json("shots.json")["shots"]
+    x, y, w, h = fr.content_of(wd)        # track the picture, not the letterbox padding
     out, warnings = [], []
     for i, s in enumerate(shots):
         first, last = shot_window(shots, i, cache["fps"])
@@ -108,7 +109,8 @@ def run(wd: WorkDir, source: Path) -> list[str]:
         if last - first < 2:
             out.append(dict(STATIC))
             continue
-        gray = [cv2.cvtColor(fr.cached_frame(wd, k), cv2.COLOR_BGR2GRAY) for k in range(first, last + 1)]
+        gray = [cv2.cvtColor(fr.cached_frame(wd, k)[y:y + h, x:x + w], cv2.COLOR_BGR2GRAY)
+                for k in range(first, last + 1)]
         res = track_motion(gray)
         if res is None:
             warnings.append(f"shot {i + 1}: too few trackable points, marked static")

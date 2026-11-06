@@ -38,12 +38,13 @@ def run(wd: WorkDir, source: Path) -> list[str]:
     cache = wd.read_json(fr.OUTPUT)
     shots = wd.read_json("shots.json")["shots"]
     n = len(cache["files"])
+    x, y, w, h = fr.content_of(wd)        # leave out letterbox / pillarbox padding
     out = []
     for i in range(len(shots)):
         first, last = shot_window(shots, i, cache["fps"])
         first, last = max(0, min(first, n - 1)), max(0, min(last, n - 1))
         if last < first:
             first = last = max(0, min(round(shots[i]["start_ms"] * cache["fps"] / 1000), n - 1))
-        out.append(stats([fr.cached_frame(wd, k) for k in sample_indices(first, last)]))
+        out.append(stats([fr.cached_frame(wd, k)[y:y + h, x:x + w] for k in sample_indices(first, last)]))
     wd.write_json(OUTPUT, {"shots": out})
     return []

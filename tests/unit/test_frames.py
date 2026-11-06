@@ -44,3 +44,20 @@ def test_read_crops_can_downscale(cards_video):
     out = frames.read_crops(cards_video["path"], {0: [("a", (0, 0, 100, 60), 0.5), ("b", (0, 0, 100, 60))]})
     assert out["a"][0].shape == (30, 50, 3) and out["b"][0].shape == (60, 100, 3)
     assert out["a"][0][..., 2].mean() > 200
+
+
+def test_content_rect_of_letterboxed_and_pillarboxed_sources():
+    from vtpl.ingest import content_rect
+    assert content_rect(1080, 1920) == {"x": 0, "y": 0, "w": 1080, "h": 1920}
+    assert content_rect(540, 960) == {"x": 0, "y": 0, "w": 1080, "h": 1920}
+    assert content_rect(1920, 1080) == {"x": 0, "y": 656, "w": 1080, "h": 608}     # 16:9 landscape
+    assert content_rect(1920, 1080, rotation=-90) == {"x": 0, "y": 0, "w": 1080, "h": 1920}
+    assert content_rect(1080, 1080) == {"x": 0, "y": 420, "w": 1080, "h": 1080}
+    assert content_rect(720, 1600) == {"x": 108, "y": 0, "w": 864, "h": 1920}      # narrower than 9:16
+
+
+def test_cached_content_rect_scales_meta_and_defaults_to_full_frame():
+    from vtpl.frames import cached_content
+    assert cached_content({"w": 1080, "h": 1920}) == (0, 0, 540, 960)               # meta.json from before `content`
+    assert cached_content({"w": 1080, "h": 1920, "content": {"x": 0, "y": 656, "w": 1080, "h": 608}}) == \
+        (0, 330, 540, 300)                                                          # inset a few px from the bars

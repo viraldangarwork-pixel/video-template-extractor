@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from tests.synth.make_fixtures import texture_clip, texture_image, zoom_clip
@@ -44,3 +46,27 @@ def test_eq_brightening_shows_in_grade(tmp_path, image):
     ga = _template(tmp_path / "A", a)["shots"][0]["grade"]
     gb = _template(tmp_path / "B", b)["shots"][0]["grade"]
     assert gb["luma_mean"] > ga["luma_mean"] + 0.08 and gb["chroma"] > ga["chroma"] * 1.3
+
+
+def test_letterboxed_grade_measures_only_the_picture(tmp_path, image):
+    import cv2
+
+    from vtpl.analyzers.grade import stats
+    video = tmp_path / "landscape.mp4"
+    texture_clip(video, image, 2.0, "transpose=1")             # 1920x1080: ingest pads it with black bars
+    cap = cv2.VideoCapture(str(video))
+    frames = []
+    while len(frames) < 10:
+        ok, f = cap.read()
+        if not ok:
+            break
+        frames.append(f)
+    cap.release()
+    unpadded = stats(frames)
+    t = _template(tmp_path, video)
+    meta = json.loads((next((tmp_path / "work").iterdir()) / "meta.json").read_text())
+    assert meta["content"]["w"] == 1080 and 600 <= meta["content"]["h"] <= 610
+    g = t["shots"][0]["grade"]
+    for k in ("luma_mean", "luma_std", "chroma"):
+        assert g[k] == pytest.approx(unpadded[k], abs=0.03), (k, g, unpadded)
+    assert t["shots"][0]["motion"]["type"] == "static"
