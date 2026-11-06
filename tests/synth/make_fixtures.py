@@ -74,3 +74,31 @@ def transitions(path: Path) -> list[dict]:
 def solid_clip(path: Path, color: str, seconds: float = 3.0) -> None:
     _ff(["-f", "lavfi", "-i", f"color=c={color}:s=1080x1920:r={FPS}:d={seconds}",
          "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", str(path)])
+
+
+def texture_image(path: Path, seed: int = 0) -> None:
+    """A 1080x1920 PNG with lots of trackable detail (noise plus coloured blocks)."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    img = cv2.GaussianBlur(rng.integers(0, 255, (1920, 1080, 3), dtype=np.uint8), (0, 0), 3)
+    for _ in range(300):
+        x, y = int(rng.integers(0, 1000)), int(rng.integers(0, 1840))
+        cv2.rectangle(img, (x, y), (x + 60, y + 60), [int(v) for v in rng.integers(0, 255, 3)], -1)
+    cv2.imwrite(str(path), img)
+
+
+def texture_clip(path: Path, image: Path, seconds: float = 3.0, vf: str | None = None) -> None:
+    """A still clip of `image`, optionally passed through a video filter."""
+    args = ["-loop", "1", "-framerate", str(FPS), "-i", str(image), "-t", str(seconds)]
+    if vf:
+        args += ["-vf", vf]
+    _ff([*args, "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", str(path)])
+
+
+def zoom_clip(path: Path, image: Path, seconds: float = 3.0, scale_to: float = 1.25) -> float:
+    """A clip zooming into `image` from 1.0 to scale_to over its length; returns scale_to."""
+    n = round(seconds * FPS)
+    vf = (f"scale=2160:3840,zoompan=z='pow({scale_to},on/{n - 1})':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2'"
+          f":d=1:s=1080x1920:fps={FPS}")
+    texture_clip(path, image, seconds, vf)
+    return scale_to
