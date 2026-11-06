@@ -14,6 +14,8 @@ WINDOW_MS = 200       # searched before the first / after the last OCR sample
 ANIM_MS = 300         # animations are measured over this long
 STYLE_FRAMES = 3
 STYLE_PAD = 0.25      # style crops extend the box by this share of its height
+BOX_PAD = 0.25        # timing / contrast crops: the box extended by this share of its height
+EDGE_FILL_SHARE = 0.5 # a first / last frame with this share of the text's fill pixels shows the text
 
 
 def _px(box, w, h):
@@ -78,9 +80,10 @@ def run(wd: WorkDir, source: Path) -> list[str]:
         style_ids = _style_frames(wd, t, cache, ratio)
         for f in sorted(set(start_ids) | set(end_ids)):
             requests[f].append((t["id"] + ":band", _band(r, W)))
+            requests[f].append((t["id"] + ":box", _expand(r, BOX_PAD)))
         for f in style_ids:
             requests[f].append((t["id"] + ":style", _expand(r, STYLE_PAD)))
-        plans[t["id"]] = (start_ids, end_ids, style_ids, s0, s1)
+        plans[t["id"]] = (start_ids, end_ids, style_ids, s0, s1, last)
     crops = fr.read_crops(wd.path("norm.mp4"), dict(requests))
 
     out, warnings = [], []
@@ -93,16 +96,36 @@ def run(wd: WorkDir, source: Path) -> list[str]:
     return warnings
 
 
-def _analyse(t: dict, plan, crops: dict, meta: dict) -> dict:
-    start_ids, end_ids, style_ids, s0, s1 = plan
-    W, H, fps = meta["w"], meta["h"], meta["fps"]
-    band = crops[t["id"] + ":band"]
-    start_crops, end_crops = [band[f] for f in start_ids], [band[f] for f in end_ids]
-    f_start = refine.refine_start(start_ids, start_crops, start_ids.index(s0), band[s0], start_crops[0])
-    f_end = refine.refine_end(end_ids, end_crops, end_ids.index(s1), band[s1], end_crops[-1])
+def _shows_text(crop, text_crop, fill_bgr) -> bool:
+    """Whether `crop` shows the text about as fully as `text_crop` does, by fill-colour pixel count."""
+    n_text = int(anim.fill_mask(text_crop, fill_bgr).sum())
+    return n_text > 0 and anim.fill_mask(crop, fill_bgr).sum() >= EDGE_FILL_SHARE * n_text
 
+
+def _analyse(t: dict, plan, crops: dict, meta: dict) -> dict:
+    start_ids, end_ids, style_ids, s0, s1, last = plan
+    W, H, fps = meta["w"], meta["h"], meta["fps"]
     styles = [style.analyze_style(crops[t["id"] + ":style"][f]) for f in style_ids]
     best_style = styles[0]                                   # style_ids are sharpest first
+    fill = best_style.color_bgr
+
+    # Timing from the text's own pixels in its box: over a full-width band, background motion
+    # crosses the threshold.
+    band, box = crops[t["id"] + ":band"], crops[t["id"] + ":box"]
+    start_box, end_box = [box[f] for f in start_ids], [box[f] for f in end_ids]
+    # Fill-colour pixels in the band also count: they find text away from its box (a slide).
+    counts = {f: int(anim.fill_mask(band[f], fill).sum()) for f in set(start_ids) | set(end_ids)}
+    if start_ids[0] == 0 and _shows_text(box[0], box[s0], fill):
+        f_start = 0                                          # on screen from the first frame: no empty frame to compare
+    else:
+        f_start = refine.refine_start(start_ids, start_box, start_ids.index(s0), box[s0], start_box[0],
+                                      also=refine.fill_flags([counts[f] for f in start_ids], counts[s0]))
+    if end_ids[-1] == last and _shows_text(box[last], box[s1], fill):
+        f_end = last
+    else:
+        f_end = refine.refine_end(end_ids, end_box, end_ids.index(s1), box[s1], end_box[-1],
+                                  also=refine.fill_flags([counts[f] for f in end_ids], counts[s1]))
+
     ranked = font.rank_fonts(t["text"], best_style.fill_mask)
     font_id, confidence = ranked[0]
     size_px = font.em_size_for(t["text"], font_id, style.ink_height(best_style.fill_mask))
@@ -110,8 +133,12 @@ def _analyse(t: dict, plan, crops: dict, meta: dict) -> dict:
     an, step = ms_to_frame(ANIM_MS, fps), 1000 / fps
     in_ids = [f for f in start_ids if f_start <= f <= f_start + an]
     out_ids = [f for f in reversed(end_ids) if f_end - an <= f <= f_end]
-    a_in = anim.classify(anim.measure([band[f] for f in in_ids], best_style.color_bgr, start_crops[0]), W, H, step)
-    a_out = anim.classify(anim.measure([band[f] for f in out_ids], best_style.color_bgr, end_crops[-1]), W, H, step)
+    none = {"kind": "none", "ms": 0}
+    # A text already on screen at the first frame (or still on at the last) shows no animation there.
+    a_in = none if f_start == 0 else anim.classify(anim.measure(
+        [band[f] for f in in_ids], fill, band[start_ids[0]], [box[f] for f in in_ids], start_box[0]), W, H, step)
+    a_out = none if f_end == last else anim.classify(anim.measure(
+        [band[f] for f in out_ids], fill, band[end_ids[-1]], [box[f] for f in out_ids], end_box[-1]), W, H, step)
     anim_doc = {"in": a_in["kind"], "in_ms": a_in["ms"], "out": a_out["kind"], "out_ms": a_out["ms"]}
     if "from" in a_in:
         anim_doc["in_from"] = a_in["from"]

@@ -49,3 +49,14 @@ def text_video_basic(fixtures_dir):
     from tests.synth.text_fixtures import BASIC_ITEMS, text_video
     path = fixtures_dir / "text_basic.mp4"
     return {"path": path, "truth": text_video(path, BASIC_ITEMS, 4.0)}
+
+
+@pytest.fixture(scope="session")
+def text_video_moving(fixtures_dir):
+    _need_ffmpeg()
+    from tests.synth.text_fixtures import MOVING_ITEMS, MOVING_SECONDS, text_video
+    path = fixtures_dir / "text_moving.mp4"
+    truth = text_video(path, MOVING_ITEMS, MOVING_SECONDS, bg="moving")
+    for t in truth:                                   # a text shown past the end ends with the video
+        t["end_ms"] = min(t["end_ms"], round(MOVING_SECONDS * 1000))
+    return {"path": path, "truth": truth}

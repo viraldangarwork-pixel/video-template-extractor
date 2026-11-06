@@ -2,19 +2,33 @@
 import cv2
 import numpy as np
 
+from vtpl.analyzers.text.refine import text_level, text_mask
 from vtpl.analyzers.text.style import lab_image, to_lab
 
 FILL_TOL = 18.0          # Lab distance for a pixel to count as fill colour
 MIN_PIXELS = 20
 
 
-def measure(crops: list[np.ndarray], fill_bgr, empty: np.ndarray) -> list[dict]:
+def fill_mask(crop: np.ndarray, fill_bgr) -> np.ndarray:
+    """Pixels within FILL_TOL of the fill colour, specks removed."""
     fill_lab = to_lab(np.asarray(fill_bgr, np.float32).round().astype(np.uint8).reshape(1, 3))[0]
+    m = np.linalg.norm(lab_image(crop) - fill_lab, axis=2) < FILL_TOL
+    return cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)) > 0
+
+
+def measure(crops: list[np.ndarray], fill_bgr, empty: np.ndarray,
+            boxes: list[np.ndarray] | None = None, box_empty: np.ndarray | None = None) -> list[dict]:
+    """Fill-pixel geometry of each crop and its contrast: how far it is from the empty crop towards
+    the settled (last) crop on the text's own pixels. With `boxes` (crops of just the text box, one
+    per crop) the contrast is taken over the box only, so that background motion elsewhere in the
+    band does not read as the text fading."""
+    if boxes is None:
+        boxes, box_empty = crops, empty
+    mask = text_mask(boxes[-1], box_empty) if boxes else None
     out = []
-    for c in crops:
-        m = np.linalg.norm(lab_image(c) - fill_lab, axis=2) < FILL_TOL
-        m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)) > 0
-        contrast = float(np.abs(c.astype(np.float32) - empty.astype(np.float32)).mean())
+    for c, b in zip(crops, boxes):
+        m = fill_mask(c, fill_bgr)
+        contrast = text_level(b, boxes[-1], box_empty, mask)
         if m.sum() < MIN_PIXELS:
             out.append({"n": 0, "w": 0.0, "h": 0.0, "cx": 0.0, "cy": 0.0, "contrast": contrast})
             continue

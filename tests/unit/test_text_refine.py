@@ -32,3 +32,23 @@ def test_confirmed_frame_without_text_is_kept():
 
 def test_identical_refs_mean_text_throughout():
     assert refine_start([5, 6, 7], ramp([1, 1, 1]), 2, TEXT, TEXT) == 5
+
+
+def test_background_motion_alone_is_not_text():
+    # A gradient sliding a few px per frame, with a hard edge (the wrap) moving through the crop,
+    # under a text block that covers part of the crop.
+    def bg(shift):
+        rows = 30 + ((np.arange(60)[:, None] + shift) % 50) * 2
+        return np.repeat(rows[:, :, None], 3, axis=2).repeat(80, axis=1).astype(np.uint8)
+    empty = bg(0)
+    text = bg(0).copy()
+    text[20:40, 20:60] = 255
+    moved = [bg(s) for s in (4, 8, 12)]
+    assert text_flags(moved, text, empty) == [False, False, False]
+    assert text_flags([text], text, empty) == [True]
+
+
+def test_fill_flags_share_of_text_pixels():
+    from vtpl.analyzers.text.refine import fill_flags
+    assert fill_flags([0, 10, 20, 100], 100) == [False, False, True, True]
+    assert fill_flags([5], 0) == [False]

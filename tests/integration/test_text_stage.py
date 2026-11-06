@@ -14,13 +14,22 @@ def lab(h):
     return to_lab(np.array([[int(h[5:7], 16), int(h[3:5], 16), int(h[1:3], 16)]], np.uint8))[0]
 
 
+def _run_stage(tmp_path_factory, video):
+    wd = WorkDir(tmp_path_factory.mktemp("text") / "w")
+    ingest.run(wd, video["path"])
+    frames.run(wd, video["path"])
+    assert stage.run(wd, video["path"]) == []
+    return wd.read_json("text.json")["tracks"]
+
+
 @pytest.fixture(scope="module")
 def tracks(tmp_path_factory, text_video_basic):
-    wd = WorkDir(tmp_path_factory.mktemp("text") / "w")
-    ingest.run(wd, text_video_basic["path"])
-    frames.run(wd, text_video_basic["path"])
-    assert stage.run(wd, text_video_basic["path"]) == []
-    return wd.read_json("text.json")["tracks"]
+    return _run_stage(tmp_path_factory, text_video_basic)
+
+
+@pytest.fixture(scope="module")
+def moving_tracks(tmp_path_factory, text_video_moving):
+    return _run_stage(tmp_path_factory, text_video_moving)
 
 
 def test_one_track_per_text(tracks, text_video_basic):
@@ -55,3 +64,15 @@ def test_font_size_and_animation(tracks, text_video_basic):
             assert abs(tr["style"]["size_px"] - t["size"]) <= 0.08 * t["size"]
         assert tr["anim"]["in"] == t["anim_in"], (t["text"], tr["anim"])
         assert tr["anim"]["out"] == t["anim_out"], (t["text"], tr["anim"])
+
+
+def test_moving_background_timing_and_animation(moving_tracks, text_video_moving):
+    """Background motion must not shift timings or turn hard cuts into fades; a text visible from the
+    first frame or to the last has no in / out animation."""
+    truth = text_video_moving["truth"]
+    assert len(moving_tracks) == len(truth)
+    for t in truth:
+        tr = _match(moving_tracks, t)
+        assert abs(tr["start_ms"] - t["start_ms"]) <= 100, (t["text"], tr["start_ms"])
+        assert abs(tr["end_ms"] - t["end_ms"]) <= 100, (t["text"], tr["end_ms"])
+        assert (tr["anim"]["in"], tr["anim"]["out"]) == (t["anim_in"], t["anim_out"]), (t["text"], tr["anim"])

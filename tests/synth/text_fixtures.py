@@ -40,6 +40,17 @@ BASIC_ITEMS = [
 ]
 
 
+# On the moving background: a hard cut, a typewriter reveal and a text shown from the first frame
+# to past the end of the video. MOVING_SECONDS long.
+MOVING_SECONDS = 4.0
+MOVING_ITEMS = [
+    TextItem("HARD CUT", "Anton-Regular", 120, (255, 255, 255), (540, 700), 800, 2600, stroke=((0, 0, 0), 5)),
+    TextItem("TYPE IT OUT", "Montserrat-Bold", 90, (255, 214, 0), (540, 1100), 1500, 3500,
+             anim_in="typewriter", anim_ms=400),
+    TextItem("ALWAYS ON", "BebasNeue-Regular", 130, (255, 255, 255), (540, 1500), 0, 10_000, stroke=((0, 0, 0), 5)),
+]
+
+
 @lru_cache(maxsize=256)
 def _font(font_id: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(font_path(entry(font_id))), size)
