@@ -32,3 +32,24 @@ def test_eq_params_clamped_and_neutral():
 def test_eq_filter():
     assert eq_filter({"brightness": 0.1, "contrast": 1.2, "saturation": 0.9}) == \
         "eq=brightness=0.100:contrast=1.200:saturation=0.900"
+
+
+def _eq_apply(y, p):
+    """FFmpeg eq on luma, modelled on full-range samples: limited-range codes, pivot on 0.5, clipped."""
+    import numpy as np
+    v = (16 + 219 * y) / 255
+    v = np.clip(p["contrast"] * (v - 0.5) + 0.5 + p["brightness"], 0, 1)
+    code = np.minimum(255, np.floor(256 * v))
+    return np.clip((code - 16) / 219, 0, 1)
+
+
+@pytest.mark.parametrize("name,mean,std", [("dark", 0.08, 0.05), ("dim", 0.25, 0.12),
+                                           ("bright", 0.8, 0.12), ("blown", 0.93, 0.08)])
+def test_grade_keeps_target_brightness_when_limits_are_hit(name, mean, std):
+    import numpy as np
+    y = np.clip(np.random.default_rng(0).normal(mean, std, 200000), 0, 1)
+    clip = {"luma_mean": float(y.mean()), "luma_std": float(y.std()), "chroma": 0.1}
+    target = {"luma_mean": 0.5, "luma_std": 0.2, "chroma": 0.1}
+    p = eq_params(target, clip)
+    assert 0.7 <= p["contrast"] <= 1.5 and -0.3 <= p["brightness"] <= 0.3
+    assert _eq_apply(y, p).mean() == pytest.approx(0.5, abs=0.03), (name, p)

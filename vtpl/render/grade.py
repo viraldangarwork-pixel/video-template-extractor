@@ -36,8 +36,18 @@ def clip_stats(path: Path, start_ms: int, dur_ms: int, n: int = SAMPLES) -> dict
 
 def eq_params(target: dict, clip: dict) -> dict | None:
     """eq settings that move `clip` towards `target`, or None if no change is needed."""
+    m, want = clip["luma_mean"], target["luma_mean"]
     c = _clamp("contrast", target["luma_std"] / clip["luma_std"]) if clip["luma_std"] > 1e-3 else 1.0
-    b = _clamp("brightness", LIMITED * (target["luma_mean"] - ((clip["luma_mean"] - PIVOT) * c + PIVOT)))
+    b_raw = LIMITED * (want - ((m - PIVOT) * c + PIVOT))
+    lo, hi = LIMITS["brightness"]
+    if not lo <= b_raw <= hi and abs(m - PIVOT) > 1e-3:
+        # brightness clips, and contrast (pivoting on mid-grey) would push the mean further off target:
+        # the mean matters most, so take the contrast that reaches it with brightness at its limit
+        b_lim = hi if b_raw > hi else lo
+        c_mean = (want - PIVOT - b_lim / LIMITED) / (m - PIVOT)
+        if c_mean > 0:
+            c = _clamp("contrast", min(c_mean, c))
+    b = _clamp("brightness", LIMITED * (want - ((m - PIVOT) * c + PIVOT)))
     s = _clamp("saturation", target["chroma"] / clip["chroma"]) if clip["chroma"] > 1e-3 else 1.0
     if abs(b) < 0.01 and abs(c - 1) < 0.02 and abs(s - 1) < 0.02:
         return None
