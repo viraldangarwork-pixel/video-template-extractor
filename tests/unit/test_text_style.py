@@ -42,13 +42,23 @@ def yuv420(img):
     return cv2.cvtColor(ycc, cv2.COLOR_YCrCb2BGR)
 
 
-def test_stroke_found_behind_a_chroma_blend_ring():
+@pytest.mark.parametrize("size", [140, 160, 170])
+def test_stroke_found_behind_a_chroma_blend_ring(size):
     # In encoded video a 1 px red/white blend ring separates the fill from its stroke.
-    crop = yuv420(text_crop("SALE", "BebasNeue-Regular", 160, (230, 30, 60), stroke=((255, 255, 255), 4)))
+    crop = yuv420(text_crop("SALE", "BebasNeue-Regular", size, (230, 30, 60), stroke=((255, 255, 255), 4)))
     s = analyze_style(crop)
     assert close(hex_from_bgr(s.color_bgr), "#E61E3C")
     assert s.stroke_bgr is not None and close(hex_from_bgr(s.stroke_bgr), "#FFFFFF") and 3 <= s.stroke_px <= 6
     assert not s.shadow
+
+
+@pytest.mark.parametrize("size", [140, 158, 170])
+def test_stroke_found_behind_a_two_pixel_blend_band(size):
+    # A libass render re-encoded for analysis blends fill and stroke over ~2 px; that band covers
+    # half the ring next to the fill, so the sides must be judged beyond it.
+    crop = yuv420(yuv420(text_crop("SALE", "BebasNeue-Regular", size, (230, 30, 60), stroke=((255, 255, 255), 4))))
+    s = analyze_style(crop)
+    assert s.stroke_bgr is not None and close(hex_from_bgr(s.stroke_bgr), "#FFFFFF") and 3 <= s.stroke_px <= 6
 
 
 def test_encoded_shadow_and_plain_text_get_no_stroke():

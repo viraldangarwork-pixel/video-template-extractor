@@ -79,17 +79,20 @@ def _side_cover(base: np.ndarray, m: np.ndarray, d: int = 2) -> tuple[float, flo
     return covers[0], covers[1]
 
 
-def _ring_px(fill: np.ndarray, m: np.ndarray, max_r: int = 12, blend: int = 1) -> int:
-    """Outer radius of the band of rings around `fill` that `m` covers. Up to `blend` leading rings
-    may be uncovered: in encoded video chroma subsampling leaves a fill/stroke blend ring."""
-    px = 0
+def _ring_band(fill: np.ndarray, m: np.ndarray, max_r: int = 12, blend: int = 1) -> tuple[int, int]:
+    """(inner, outer): `m` covers the rings inner+1 .. outer around `fill`; (0, 0) if it covers none.
+    Up to `blend` leading rings may be uncovered: in encoded video chroma subsampling leaves a
+    fill/stroke blend ring."""
+    inner, px = 0, 0
     for r in range(1, max_r + 1):
         ring = _dilate(fill, r) & ~_dilate(fill, r - 1)
         if ring.any() and (ring & m).sum() / ring.sum() >= 0.5:
             px = r
         elif px or r > blend or not ring.any():
             break
-    return px
+        else:
+            inner = r
+    return (inner, px) if px else (0, 0)
 
 
 def _on_segment(c, a, b, tol: float) -> bool:
@@ -131,11 +134,11 @@ def analyze_style(crop: np.ndarray) -> Style:
         if delta_e(centers[k], fill_lab) < STROKE_DIFF or _on_segment(centers[k], fill_lab, bg_lab, 10):
             continue
         m = labels == k
-        if min(_side_cover(fill, m)) >= 0.5:
-            px = _ring_px(fill, m)
-            if px >= 2:
-                stroke_bgr, stroke_px = np.median(crop[m], axis=0), px
-                break
+        inner, px = _ring_band(fill, m)
+        # Judge the sides beyond the blend ring, which can fill half of the ring right next to the fill.
+        if px >= 2 and min(_side_cover(_dilate(fill, inner), m)) >= 0.5:
+            stroke_bgr, stroke_px = np.median(crop[m], axis=0), px
+            break
     text = fill | (_dilate(fill, stroke_px) if stroke_bgr is not None else fill)
     for k in others:
         m = labels == k
