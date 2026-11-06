@@ -47,11 +47,24 @@ def similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(0.5 * overlap + 0.5 * max(0.0, 1 - chamfer / (0.1 * h)))
 
 
+def _ink_columns(mask: np.ndarray) -> np.ndarray:
+    """The mask without its empty columns: letter and word spacing removed."""
+    return mask[:, mask.any(axis=0)]
+
+
 def rank_fonts(text: str, fill_mask: np.ndarray, top: int = 3) -> list[tuple[str, float]]:
+    """Catalog fonts by glyph similarity to the mask. Each font scores the better of the text as read
+    and a comparison with the spacing removed from both sides, so that OCR merging or splitting
+    words ("LINKIN BIO") does not decide the font."""
     target = crop_to_ink(fill_mask)
     if target.size == 0:
         raise ValueError("empty text mask")
-    scored = [(e.id, similarity(target, ink_mask(text, e.id, target.shape[0]))) for e in catalog()]
+    packed, squeezed = _ink_columns(target), "".join(text.split())
+    scored = []
+    for e in catalog():
+        as_read = similarity(target, ink_mask(text, e.id, target.shape[0]))
+        unspaced = similarity(packed, _ink_columns(ink_mask(squeezed, e.id, target.shape[0]))) if squeezed else 0.0
+        scored.append((e.id, max(as_read, unspaced)))
     return sorted(scored, key=lambda s: s[1], reverse=True)[:top]
 
 

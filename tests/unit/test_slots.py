@@ -25,7 +25,7 @@ def test_yaml_mapping(tmp_path):
     song = touch(tmp_path / "song.wav")
     (tmp_path / "texts.yaml").write_text(
         "clips:\n  clip_1: beach.mov\n  clip_2: beach.mov\n  clip_3: beach.mov\nmusic: song.wav\ntext_1: HELLO\n")
-    media = resolve_media(T, tmp_path)
+    media = resolve_media({**T, "texts": [{"slot": "text_1", "kind": "overlay"}]}, tmp_path)
     assert set(media.clips.values()) == {beach}
     assert media.music == song and media.texts == {"text_1": "HELLO"} and media.warnings == []
 
@@ -79,3 +79,19 @@ def test_captions_key_is_kept(tmp_path):
     (tmp_path / "texts.yaml").write_text("captions: new words here\ntext_1: HI\nother: x\n")
     media = resolve_media({"shots": [{"slot": "clip_1"}]}, tmp_path)
     assert media.texts == {"captions": "new words here", "text_1": "HI"}
+
+
+def test_unused_text_keys_and_captions_without_speech_warn(tmp_path):
+    touch(tmp_path / "clip_1.mp4")
+    touch(tmp_path / "music.mp3")
+    (tmp_path / "texts.yaml").write_text("text_1: HI\ntext_7: NOPE\ncaptions: new words\n")
+    tpl = {"shots": [{"slot": "clip_1"}], "texts": [{"slot": "text_1", "kind": "overlay"}],
+           "captions": {"style_ref": None, "words": []}}
+    media = resolve_media(tpl, tmp_path)
+    assert media.warnings == [
+        "texts.yaml: text_7 matches no text in the template (it has text_1)",
+        "texts.yaml: captions ignored, the template has no speech words to time them",
+    ]
+    tpl["captions"]["words"] = [{"w": "hi", "start_ms": 0, "end_ms": 200}]
+    (tmp_path / "texts.yaml").write_text("text_1: HI\ncaptions: new words\n")
+    assert resolve_media(tpl, tmp_path).warnings == []

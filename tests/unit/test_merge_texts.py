@@ -59,3 +59,10 @@ def test_run_reads_text_json(tmp_path):
     wd.write_json("text.json", {"tracks": [track("t1", "SALE", 0, 1000)]})
     merge.run(wd, tmp_path / "v.mp4")
     assert wd.read_json("template.json")["texts"][0]["sample"] == "SALE"
+
+
+def test_colours_are_normalised_to_uppercase():
+    tr = track("t1", "SALE", 0, 1000)
+    tr["style"].update(color="#ffcc00", stroke={"color": "#00ff7f", "px": 5})
+    st = merge.build_template(META, SHOTS, None, None, "abc", {"tracks": [tr]})["texts"][0]["style"]
+    assert st["color"] == "#FFCC00" and st["stroke"]["color"] == "#00FF7F"

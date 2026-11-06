@@ -33,8 +33,9 @@ def is_caption(track: dict, words: list[dict]) -> bool:
 
 def _text_item(track: dict, item_id: str, slot: str, kind: str, dur: int) -> dict:
     font, st = track["font"], track["style"]
+    stroke = {**st["stroke"], "color": st["stroke"]["color"].upper()} if st["stroke"] else None
     style_doc = {"font": font["id"], "font_confidence": font["confidence"], "size_px": st["size_px"],
-                 "color": st["color"], "stroke": st["stroke"], "shadow": st["shadow"]}
+                 "color": st["color"].upper(), "stroke": stroke, "shadow": st["shadow"]}
     if font["confidence"] < FONT_MIN_CONFIDENCE:
         style_doc["font"], style_doc["font_guess"] = FALLBACK_ID, font["id"]
     return {"id": item_id, "slot": slot, "sample": track["text"], "kind": kind,

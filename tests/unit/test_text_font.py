@@ -47,3 +47,11 @@ def test_em_size_recovered():
 def test_empty_mask_raises():
     with pytest.raises(ValueError, match="empty text mask"):
         rank_fonts("X", np.zeros((10, 10), bool))
+
+
+def test_ocr_spacing_errors_do_not_decide_the_font():
+    # OCR often merges or splits words ("LINKIN BIO" for "LINK IN BIO"); the glyphs still match.
+    s = analyze_style(video_like(text_crop("LINK IN BIO", "Montserrat-Bold", 80, (255, 255, 0))))
+    assert rank_fonts("LINKIN BIO", s.fill_mask)[0][0] == "Montserrat-Bold"
+    s = analyze_style(video_like(text_crop("DAY 1", "Anton-Regular", 110, (255, 214, 0))))
+    assert rank_fonts("DAY1", s.fill_mask)[0][0] == "Anton-Regular"

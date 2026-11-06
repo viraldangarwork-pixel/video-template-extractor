@@ -118,3 +118,11 @@ def test_shrink_applies_to_pop_and_every_typewriter_step():
     assert f"\\t(100,150,\\fscx{s}\\fscy{s})" in pop and f"\\fscx{round(0.8 * s)}" in pop
     tw = overlay_events(item(**{"in": "typewriter", "in_ms": 300}), long)
     assert all(_scale(e) == (s, s) for e in tw)
+
+
+def test_lowercase_colours_render_like_uppercase():
+    low = item()
+    low["style"].update(color="#ffcc00", stroke={"color": "#00ff7f", "px": 3})
+    up = item()
+    up["style"].update(color="#FFCC00", stroke={"color": "#00FF7F", "px": 3})
+    assert build_ass(tpl([low]), {}) == build_ass(tpl([up]), {})

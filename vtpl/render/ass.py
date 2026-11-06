@@ -33,6 +33,7 @@ def ass_time(ms: int) -> str:
 
 
 def ass_color(hex_rgb: str, alpha: int = 0) -> str:
+    hex_rgb = hex_rgb.upper()                             # the schema accepts either case
     r, g, b = hex_rgb[1:3], hex_rgb[3:5], hex_rgb[5:7]
     return f"&H{alpha:02X}{b}{g}{r}".upper()
 

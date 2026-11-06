@@ -23,10 +23,10 @@ TEXT_ITEM = {
             "properties": {
                 "font": {"type": "string"}, "font_guess": {"type": "string"},
                 "font_confidence": {"type": "number"}, "size_px": {"type": "integer", "minimum": 1},
-                "color": {"type": "string", "pattern": "^#[0-9A-F]{6}$"},
+                "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
                 "stroke": {"oneOf": [{"type": "null"}, {
                     "type": "object", "required": ["color", "px"],
-                    "properties": {"color": {"type": "string", "pattern": "^#[0-9A-F]{6}$"},
+                    "properties": {"color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
                                    "px": {"type": "integer", "minimum": 0}}}]},
                 "shadow": {"type": "boolean"},
             },

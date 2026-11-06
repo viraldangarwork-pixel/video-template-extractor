@@ -94,3 +94,13 @@ def test_unknown_font_is_a_template_error():
     t["texts"][0]["style"]["font"] = "Comic-Sans"
     with pytest.raises(TemplateError, match=r"texts/0/style/font: unknown font 'Comic-Sans'; see .*catalog\.json"):
         validate(t)
+
+
+def test_lowercase_hex_colours_are_accepted():
+    t = copy.deepcopy(GOOD)
+    t["texts"] = [copy.deepcopy(TEXT)]
+    t["texts"][0]["style"].update(color="#ffcc00", stroke={"color": "#00ff7f", "px": 3})
+    validate(t)
+    t["texts"][0]["style"]["color"] = "#ffcc0"
+    with pytest.raises(TemplateError, match="texts/0/style/color"):
+        validate(t)
