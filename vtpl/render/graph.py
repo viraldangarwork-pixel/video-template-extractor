@@ -12,6 +12,8 @@ class Segment:
     trans_in: str         # cut | fade | dissolve | flash
     trans_in_frames: int
     offset_frames: int    # where this segment starts in the output timeline (xfade offset)
+    motion: dict | None = None     # non-static camera motion to reproduce
+    grade: dict | None = None      # target grade statistics
 
 
 def frames(ms: int) -> int:
@@ -35,8 +37,10 @@ def plan_segments(template: dict) -> list[Segment]:
         d_out = _dur(shots[i + 1]["transition_in"]) if i + 1 < len(shots) else 0
         f0, f1 = frames(s["start_ms"]), frames(s["end_ms"])
         length = (f1 - f0) + d_in // 2 + (d_out - d_out // 2)
+        m = s.get("motion")
         segs.append(Segment(s["slot"], length, s["transition_in"]["type"] if d_in else "cut", d_in,
-                            f0 - d_in // 2))
+                            f0 - d_in // 2, motion=m if m and m["type"] != "static" else None,
+                            grade=s.get("grade")))
     return segs
 
 
@@ -62,14 +66,32 @@ def _filter_path(p: Path) -> str:
     return s
 
 
+def zoompan_filter(m: dict, n_frames: int) -> str:
+    s = max(m["scale_to"] / m["scale_from"], 1e-3)
+    dx, dy = float(m["dx"]), float(m["dy"])
+    shift = max(abs(dx), abs(dy))
+    zb = 1 + shift + 0.02 if shift > 0 else 1.0
+    z0 = zb * max(1.0, 1 / s)
+    p = f"(on/{max(1, n_frames - 1)})"
+    x = f"max(0,min(iw-iw/zoom,(iw-iw/zoom)/2-({p}-0.5)*{dx:.5f}*iw/zoom))"
+    y = f"max(0,min(ih-ih/zoom,(ih-ih/zoom)/2-({p}-0.5)*{dy:.5f}*ih/zoom))"
+    return (f"scale={2 * W}:{2 * H},zoompan=z='{z0:.5f}*pow({s:.5f},{p})':x='{x}':y='{y}'"
+            f":d=1:s={W}x{H}:fps={FPS}")
+
+
 def build_filter(segs: list[Segment], has_music: bool, duration_ms: int,
+                 eqs: list[str | None] | None = None,
                  ass: Path | None = None, fonts_dir: Path | None = None) -> str:
-    parts = [
-        f"[{i}:v]setpts=PTS-STARTPTS,"
-        f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps={FPS},"
-        f"trim=end_frame={seg.length_frames},setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s{i}]"
-        for i, seg in enumerate(segs)
-    ]
+    parts = []
+    for i, seg in enumerate(segs):
+        extra = ""
+        if eqs and eqs[i]:
+            extra += eqs[i] + ","
+        if seg.motion:
+            extra += zoompan_filter(seg.motion, seg.length_frames) + ","
+        parts.append(f"[{i}:v]setpts=PTS-STARTPTS,"
+                     f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},{extra}setsar=1,fps={FPS},"
+                     f"trim=end_frame={seg.length_frames},setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s{i}]")
     cur = "[s0]"
     for i in range(1, len(segs)):
         seg, nxt = segs[i], f"[j{i}]"
@@ -95,13 +117,15 @@ def build_filter(segs: list[Segment], has_music: bool, duration_ms: int,
 
 
 def build_args(segs: list[Segment], clips: list[Path], trims_ms: list[int], music: Path | None,
-               duration_ms: int, out: Path, ass: Path | None = None, fonts_dir: Path | None = None) -> list[str]:
+               duration_ms: int, out: Path, eqs: list[str | None] | None = None,
+               ass: Path | None = None, fonts_dir: Path | None = None) -> list[str]:
     args: list[str] = []
     for p, t0 in zip(clips, trims_ms):
         args += ["-ss", _s(t0), "-stream_loop", "-1", "-i", str(p)]    # input seek: no decoding up to t0
     if music is not None:
         args += ["-stream_loop", "-1", "-i", str(music)]
-    args += ["-filter_complex", build_filter(segs, music is not None, duration_ms, ass, fonts_dir), "-map", "[vout]"]
+    args += ["-filter_complex", build_filter(segs, music is not None, duration_ms,
+                                                eqs=eqs, ass=ass, fonts_dir=fonts_dir), "-map", "[vout]"]
     if music is not None:
         args += ["-map", "[aout]", "-c:a", "aac", "-b:a", "192k"]
     args += ["-c:v", "libx264", "-crf", "20", "-preset", "medium", "-pix_fmt", "yuv420p",

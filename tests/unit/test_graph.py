@@ -69,3 +69,23 @@ def test_subtitles_filter_before_final_trim(tmp_path):
     assert "a b\\\\:c" in tail                            # ':' -> '\:' (option level) -> '\\:' (graph level)
     assert tail.endswith("trim=duration=4.000,setpts=PTS-STARTPTS[vout]")
     assert "subtitles" not in build_filter(plan_segments(T), False, 4000)
+
+
+def test_zoompan_filter_expressions():
+    from vtpl.render.graph import zoompan_filter
+    z = zoompan_filter({"type": "zoom_in", "scale_from": 1.0, "scale_to": 1.2, "dx": 0.0, "dy": 0.0}, 91)
+    assert z.startswith("scale=2160:3840,zoompan=z='1.00000*pow(1.20000,(on/90))'")
+    assert ":d=1:s=1080x1920:fps=30" in z
+    p = zoompan_filter({"type": "pan", "scale_from": 1.0, "scale_to": 1.0, "dx": 0.1, "dy": 0.0}, 31)
+    assert "z='1.12000*pow(1.00000,(on/30))'" in p and "-((on/30)-0.5)*0.10000*iw/zoom" in p
+
+
+def test_segments_carry_motion_and_static_is_dropped():
+    from vtpl.render.graph import build_filter, plan_segments
+    t = {"shots": [dict(T["shots"][0], motion={"type": "zoom_in", "scale_from": 1.0, "scale_to": 1.2, "dx": 0, "dy": 0}),
+                   dict(T["shots"][1], motion={"type": "static", "scale_from": 1.0, "scale_to": 1.0, "dx": 0, "dy": 0}),
+                   T["shots"][2]], "meta": T["meta"]}
+    segs = plan_segments(t)
+    assert segs[0].motion["type"] == "zoom_in" and segs[1].motion is None and segs[2].motion is None
+    f = build_filter(segs, False, 4000)
+    assert f.split(";")[0].count("zoompan") == 1 and "zoompan" not in f.split(";")[1]
