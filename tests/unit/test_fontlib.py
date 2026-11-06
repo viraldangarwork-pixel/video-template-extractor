@@ -27,10 +27,20 @@ def test_entry_lookup():
         fontlib.entry("Nope")
 
 
-def test_ass_font_size_is_line_height():
-    asc, desc = fontlib.pil_font("Montserrat-Bold", 100).getmetrics()
-    assert fontlib.ass_font_size("Montserrat-Bold", 100) == asc + desc
-    assert fontlib.ass_font_size("Montserrat-Bold", 100) > 100
+def test_ass_font_size_uses_win_metrics_like_libass():
+    # libass (like GDI) sizes a font so that usWinAscent + usWinDescent equals the ASS Fontsize;
+    # Montserrat's hhea line height (968 + 251) is much smaller than its win one (1109 + 453).
+    assert fontlib.ass_font_size("Montserrat-Bold", 100) == 156
+    assert fontlib.ass_font_size("BebasNeue-Regular", 100) == 130     # win 950 + 350
+    assert fontlib.ass_font_size("Anton-Regular", 96) == round(96 * (2876 + 674) / 2048)
+
+
+def test_ass_font_size_matches_os2_table_for_every_bundled_font():
+    from fontTools.ttLib import TTFont
+    for e in fontlib.catalog():
+        t = TTFont(fontlib.font_path(e))
+        os2, upm = t["OS/2"], t["head"].unitsPerEm
+        assert fontlib.ass_font_size(e.id, 120) == round(120 * (os2.usWinAscent + os2.usWinDescent) / upm), e.id
 
 
 def test_fonts_dir_env_override(tmp_path, monkeypatch):
