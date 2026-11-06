@@ -80,6 +80,8 @@ def eval_cmd(
     golden: Path = typer.Option(..., exists=True, file_okay=False, help="Folder of videos + <name>.expected.json"),
     out: Path = typer.Option(Path("work"), help="Work folder root (eval_report.json is written here)"),
     stages: str = typer.Option("", help=f"Comma-separated subset of: {','.join(STAGE_NAMES)}"),
+    force: bool = typer.Option(True, "--force/--no-force",
+                               help="Re-analyse every video (default) or reuse cached stage outputs"),
 ):
     """Score analysis against hand-checked expected results."""
     from vtpl.eval import evaluate, format_report
@@ -89,7 +91,7 @@ def eval_cmd(
         _fail(f"unknown stages: {', '.join(unknown)}. Valid stages: {', '.join(STAGE_NAMES)}")
     try:
         require_ffmpeg()
-        result = evaluate(golden, out, only)
+        result = evaluate(golden, out, only, force=force)
     except (FFmpegError, TemplateError, ValueError, OSError) as e:
         _fail(str(e))
     typer.echo(format_report(result["videos"], result["summary"]))

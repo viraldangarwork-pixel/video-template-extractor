@@ -76,7 +76,8 @@ def format_report(report: dict, summary: dict) -> str:
     return "\n".join(lines)
 
 
-def evaluate(golden: Path, work_root: Path, only: set[str] | None = None) -> dict:
+def evaluate(golden: Path, work_root: Path, only: set[str] | None = None, force: bool = True) -> dict:
+    """Analyse every golden video (from scratch unless force is False) and score it against its expected file."""
     golden = Path(golden)
     report = {}
     for exp_path in sorted(golden.glob("*.expected.json")):
@@ -84,7 +85,7 @@ def evaluate(golden: Path, work_root: Path, only: set[str] | None = None) -> dic
         video = next((golden / f"{name}{ext}" for ext in VIDEO_EXT if (golden / f"{name}{ext}").exists()), None)
         if video is None:
             raise FileNotFoundError(f"no video found for {exp_path.name} (expected {name}.mp4 or similar)")
-        template = json.loads(analyze(video, work_root, only=only).read_text())
+        template = json.loads(analyze(video, work_root, force=force, only=only).read_text())
         report[name] = score(json.loads(exp_path.read_text()), template)
     if not report:
         raise FileNotFoundError(f"no *.expected.json files in {golden}")
