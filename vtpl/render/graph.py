@@ -84,13 +84,15 @@ def build_filter(segs: list[Segment], has_music: bool, duration_ms: int,
                  ass: Path | None = None, fonts_dir: Path | None = None) -> str:
     parts = []
     for i, seg in enumerate(segs):
+        # fps comes first: zoompan emits one frame per input frame, stamped 1/FPS apart, so a clip at
+        # any other frame rate would otherwise play at the wrong speed
         extra = ""
         if eqs and eqs[i]:
             extra += eqs[i] + ","
         if seg.motion:
             extra += zoompan_filter(seg.motion, seg.length_frames) + ","
         parts.append(f"[{i}:v]setpts=PTS-STARTPTS,"
-                     f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},{extra}setsar=1,fps={FPS},"
+                     f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={FPS},{extra}setsar=1,"
                      f"trim=end_frame={seg.length_frames},setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s{i}]")
     cur = "[s0]"
     for i in range(1, len(segs)):

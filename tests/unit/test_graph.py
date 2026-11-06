@@ -33,8 +33,8 @@ def test_trim_start_centres_clip():
 def test_build_filter():
     f = build_filter(plan_segments(T), has_music=True, duration_ms=4000)
     assert "[0:v]setpts=PTS-STARTPTS,scale=" in f and "trim=start" not in f
-    assert ("scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,"
-            "fps=30,trim=end_frame=36,setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s0]") in f
+    assert ("scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,"
+            "setsar=1,trim=end_frame=36,setpts=PTS-STARTPTS,format=yuv420p,settb=AVTB[s0]") in f
     assert "trim=end_frame=51," in f and "trim=end_frame=45," in f
     assert "[s0][s1]xfade=transition=fade:duration=0.400000:offset=0.800000[j1]" in f
     assert "[j1][s2]concat=n=2:v=1:a=0[j2]" in f
@@ -89,3 +89,4 @@ def test_segments_carry_motion_and_static_is_dropped():
     assert segs[0].motion["type"] == "zoom_in" and segs[1].motion is None and segs[2].motion is None
     f = build_filter(segs, False, 4000)
     assert f.split(";")[0].count("zoompan") == 1 and "zoompan" not in f.split(";")[1]
+    assert "crop=1080:1920,fps=30,scale=2160:3840,zoompan=" in f.split(";")[0]     # frame rate fixed before zoompan
