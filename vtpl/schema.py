@@ -87,6 +87,17 @@ TEMPLATE_SCHEMA = {
                     "type": "object", "required": ["type", "duration_ms"],
                     "properties": {"type": {"enum": ["cut", "fade", "dissolve", "flash"]}, "duration_ms": INT},
                 },
+                "motion": {
+                    "type": "object", "required": ["type", "scale_from", "scale_to", "dx", "dy"],
+                    "properties": {"type": {"enum": ["static", "zoom_in", "zoom_out", "pan"]},
+                                   "scale_from": {"type": "number", "exclusiveMinimum": 0},
+                                   "scale_to": {"type": "number", "exclusiveMinimum": 0},
+                                   "dx": {"type": "number"}, "dy": {"type": "number"}},
+                },
+                "grade": {
+                    "type": "object", "required": ["luma_mean", "luma_std", "chroma"],
+                    "properties": {"luma_mean": UNIT, "luma_std": UNIT, "chroma": UNIT},
+                },
             },
         },
     },

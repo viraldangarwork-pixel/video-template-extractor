@@ -57,8 +57,15 @@ def build_texts(tracks: list[dict], words: list[dict], dur: int) -> tuple[list[d
     return overlays + ([caption] if caption else []), ("c1" if caption else None)
 
 
+def _per_shot(doc: dict | None, n: int) -> list | None:
+    """The doc's per-shot list when it matches the shot count, else None."""
+    items = (doc or {}).get("shots")
+    return items if isinstance(items, list) and len(items) == n else None
+
+
 def build_template(meta: dict, shots_doc: dict, audio: dict | None, speech: dict | None, source_id: str,
-                   text_doc: dict | None = None) -> dict:
+                   text_doc: dict | None = None, motion_doc: dict | None = None,
+                   grade_doc: dict | None = None) -> dict:
     dur = meta["duration_ms"]
     audio = audio or {"bpm": None, "beats_ms": [], "downbeat_hint_ms": []}
     audio = {**audio, **{k: [ms for ms in audio[k] if 0 <= ms <= dur] for k in ("beats_ms", "downbeat_hint_ms")}}
@@ -74,6 +81,11 @@ def build_template(meta: dict, shots_doc: dict, audio: dict | None, speech: dict
         "on_beat": i > 0 and is_on_beat(s["start_ms"], audio["beats_ms"]),
         "transition_in": s["transition_in"],
     } for i, s in enumerate(shots)]
+    for key, doc in (("motion", motion_doc), ("grade", grade_doc)):
+        per = _per_shot(doc, len(out_shots))
+        if per:
+            for shot, value in zip(out_shots, per):
+                shot[key] = value
     pattern = beat_pattern(out_shots, 60000 / audio["bpm"]) if audio["bpm"] else []
     template = {
         "version": 1,
@@ -92,14 +104,16 @@ def build_template(meta: dict, shots_doc: dict, audio: dict | None, speech: dict
 def run(wd: WorkDir, source: Path) -> list[str]:
     warnings = []
     optional = {}
-    for name in ("audio.json", "speech.json", "text.json"):
+    missing = {"audio.json": "no beats", "speech.json": "no captions", "text.json": "no text overlays",
+               "motion.json": "no camera motion", "grade.json": "no colour grade"}
+    for name, effect in missing.items():
         if wd.has(name):
             optional[name] = wd.read_json(name)
         else:
-            warnings.append(f"{name} missing: " + {"audio.json": "no beats", "speech.json": "no captions",
-                                                   "text.json": "no text overlays"}[name])
+            warnings.append(f"{name} missing: {effect}")
     template = build_template(wd.read_json("meta.json"), wd.read_json("shots.json"),
                               optional.get("audio.json"), optional.get("speech.json"), source_id=wd.root.name,
-                              text_doc=optional.get("text.json"))
+                              text_doc=optional.get("text.json"), motion_doc=optional.get("motion.json"),
+                              grade_doc=optional.get("grade.json"))
     wd.write_json(OUTPUT, template)
     return warnings
