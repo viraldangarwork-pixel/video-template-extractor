@@ -50,8 +50,24 @@ def test_captions_are_burned(tmp_path):
     t = copy.deepcopy(GOOD)
     t["captions"]["words"] = [{"w": "hello", "start_ms": 300, "end_ms": 900},
                               {"w": "there", "start_ms": 900, "end_ms": 1500}]
+    cap = copy.deepcopy(TEXT)                       # the source showed captions in this style
+    cap.update(id="c1", slot="captions", kind="caption", sample="HELLO THERE", start_ms=300, end_ms=1500,
+               box={"x": 0.1, "y": 0.7, "w": 0.8, "h": 0.06})
+    cap["style"].update(size_px=110, stroke={"color": "#000000", "px": 5})
+    t["texts"] = [cap]
+    t["captions"]["style_ref"] = "c1"
     tpl = tmp_path / "template.json"
     tpl.write_text(json.dumps(t))
     out = tmp_path / "out.mp4"
     render(tpl, _setup(tmp_path), out)
     assert any("HELLO" in x for x in _texts(_read(out, 36)))                       # 1.2 s
+
+
+def test_speech_without_source_captions_is_not_burned(tmp_path):
+    t = copy.deepcopy(GOOD)
+    t["captions"]["words"] = [{"w": "hello", "start_ms": 300, "end_ms": 900}]
+    tpl = tmp_path / "template.json"
+    tpl.write_text(json.dumps(t))
+    out = tmp_path / "out.mp4"
+    render(tpl, _setup(tmp_path), out)
+    assert not out.with_suffix(".ass").exists()

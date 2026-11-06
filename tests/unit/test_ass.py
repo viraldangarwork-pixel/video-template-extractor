@@ -56,15 +56,30 @@ def test_replacement_and_empty_text():
     assert doc.rstrip().endswith("NEW")
 
 
+def caption_item():
+    x = copy.deepcopy(TEXT)
+    x.update(id="c1", slot="captions", kind="caption", sample="SO TODAY WE")
+    return x
+
+
 def test_caption_lines_and_karaoke():
     words = [{"w": w, "start_ms": s, "end_ms": e} for w, s, e in
              [("so", 0, 200), ("today", 200, 600), ("we", 700, 800), ("go", 2000, 2300)]]
     lines = caption_lines(words)
     assert [[w["w"] for w in l] for l in lines] == [["so", "today", "we"], ["go"]]
-    doc = build_ass(tpl(words=words), {})
+    t = tpl([caption_item()], words=words)
+    t["captions"]["style_ref"] = "c1"                         # the source had captions
+    doc = build_ass(t, {})
     dialogue = [l for l in doc.splitlines() if l.startswith("Dialogue:") and ",Caption," in l]
     assert len(dialogue) == 2
     assert "{\\k20}so {\\k50}today {\\k10}we" in dialogue[0]          # gap after "today" goes to its \k
+
+
+def test_captions_only_when_the_source_had_them_or_the_user_asks():
+    words = [{"w": "hello", "start_ms": 0, "end_ms": 400}]
+    assert build_ass(tpl(words=words), {}) is None             # speech, but no captions on screen
+    doc = build_ass(tpl(words=words), {"captions": "new line"})
+    assert "Style: Caption," in doc and "new" in doc and "line" in doc
 
 
 def test_replace_words_spreads_over_speech_time():

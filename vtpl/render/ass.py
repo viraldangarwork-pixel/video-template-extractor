@@ -172,11 +172,14 @@ def build_ass(template: dict, texts: dict[str, str]) -> str | None:
         if ev:
             styles.append(style_line(item["id"], item["style"]))
             events += ev
-    words = template["captions"]["words"]
+    # Burn captions only when the source showed them (style_ref) or texts.yaml asks for them:
+    # speech alone does not mean the video had captions.
+    style_ref = template["captions"]["style_ref"]
+    words = template["captions"]["words"] if style_ref is not None or "captions" in texts else []
     if "captions" in texts:
         words = replace_words(words, texts["captions"])
     if words:
-        ref = next((x for x in template["texts"] if x["id"] == template["captions"]["style_ref"]), None)
+        ref = next((x for x in template["texts"] if x["id"] == style_ref), None)
         styles.append(style_line("Caption", ref["style"] if ref else DEFAULT_CAPTION_STYLE, secondary_alpha=0x80))
         events += caption_events(words, ref["box"] if ref else DEFAULT_CAPTION_BOX)
     if not events:

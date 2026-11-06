@@ -34,6 +34,10 @@ text_2: ""            # hide this overlay
 captions: new spoken line to show as karaoke captions
 ```
 
+Captions are burned only when the source showed them (`captions.style_ref` names the caption
+text in `texts`) or when `texts.yaml` has a `captions:` line; speech alone draws nothing. A
+`captions:` line is spread over the original speech timing, so the template needs speech words.
+
 Fonts are matched against the bundled set in `vtpl/assets/fonts` (see its README for licences).
 
 Speech uses faster-whisper `small` by default; set `VTPL_WHISPER_MODEL=tiny` for speed. The first run downloads the model.
