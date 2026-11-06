@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 import pytest
@@ -65,3 +67,48 @@ def test_extrapolation_is_capped_and_motion_bounded():
     assert scale == pytest.approx(1 / 1.5) and dx == 0.25 and dy == -0.25
     assert extrapolate(2.0, 0.0, 0.0, 1.2)[0] == 1.5
     assert extrapolate(1.1, 0.01, 0.0, 1.5) == pytest.approx((1.1 ** 1.5, 0.015, 0.0))
+
+
+def _shake_offsets(n, amp, seed=1):
+    """Zero-drift handheld tremor: a sum of sines (px) sampled at the 15 fps cache rate."""
+    import math
+    ph = np.random.default_rng(seed).uniform(0, 6.28, 4)
+    out = []
+    for i in range(n):
+        t = i / 15
+        out.append((amp * (math.sin(2 * math.pi * 1.3 * t + ph[0]) + 0.5 * math.sin(2 * math.pi * 4.1 * t + ph[1])),
+                    amp * (math.sin(2 * math.pi * 0.9 * t + ph[2]) + 0.5 * math.sin(2 * math.pi * 3.7 * t + ph[3]))))
+    return out
+
+
+def test_handheld_shake_is_not_a_pan():
+    from vtpl.analyzers.motion import window_motion
+    base = texture()
+    offsets = _shake_offsets(31, 0.023 * W)
+    frames = [warp(base, tx=ox, ty=oy) for ox, oy in offsets]
+    assert classify(*track_motion(frames))["type"] == "pan"        # summed displacement looks like a pan
+    assert classify(*window_motion(frames)) == STATIC
+
+
+def test_steady_pan_is_still_a_pan():
+    from vtpl.analyzers.motion import window_motion
+    base = texture()
+    frames = [warp(base, tx=4 * i) for i in range(10)]
+    scale, dx, dy = window_motion(frames)
+    assert scale == pytest.approx(1.0, abs=0.01) and dx == pytest.approx(36 / W, abs=0.01) and abs(dy) < 0.01
+    assert classify(scale, dx, dy)["type"] == "pan"
+    shaky = [warp(base, tx=4 * i + ox / 3, ty=oy / 3) for i, (ox, oy) in enumerate(_shake_offsets(30, 0.023 * W))]
+    m = classify(*window_motion(shaky))
+    assert m["type"] == "pan" and m["dx"] == pytest.approx(116 / W, abs=0.02)
+
+
+def test_steady_zoom_and_line_fit():
+    from vtpl.analyzers.motion import steady_motion, window_motion
+    base = texture()
+    scale, dx, dy = window_motion([warp(base, 1.02 ** i) for i in range(10)])
+    assert scale == pytest.approx(1.02 ** 9, abs=0.02) and abs(dx) < 0.01 and abs(dy) < 0.01
+    # per-pair (index, dlog scale, dx, dy): a back-and-forth wobble has no steady trend
+    wobble = np.array([[i, 0.01 * (-1) ** i, 0.004 * (-1) ** i, 0.0] for i in range(20)])
+    assert steady_motion(wobble, 20) == (1.0, 0.0, 0.0)
+    steady = np.array([[i, math.log(1.01), 0.002, -0.001] for i in range(20)])
+    assert steady_motion(steady, 20) == pytest.approx((1.01 ** 20, 0.04, -0.02))

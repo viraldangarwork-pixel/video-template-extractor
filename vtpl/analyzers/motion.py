@@ -23,6 +23,7 @@ MAX_DXY = 0.25             # and pans within this share of the frame on each axi
 STATIC = {"type": "static", "scale_from": 1.0, "scale_to": 1.0, "dx": 0.0, "dy": 0.0}
 
 
+MIN_R2 = 0.6               # how well a straight line must fit the zoom / centre path to count as a move
 STILL_PX = 1.0             # a feature that never moves further than this over the window is "static"
 STILL_RADIUS = 10          # px around a static feature kept out of the second fit
 
@@ -59,26 +60,67 @@ def _magnitude(m: tuple[float, float, float]) -> float:
     return abs(math.log(max(m[0], 1e-6))) + math.hypot(m[1], m[2])
 
 
-def measure_motion(frames_gray: list[np.ndarray]) -> tuple[float, float, float] | None:
-    """track_motion, ignoring static overlays: when the frame moves, features that stay put (burnt-in text)
+def _line_fit(t: np.ndarray, ys: np.ndarray) -> tuple[np.ndarray, float]:
+    """Slopes of straight lines through each column of ys over t, and the pooled R² of those lines."""
+    tc = t - t.mean()
+    slopes = (tc @ (ys - ys.mean(axis=0))) / max(float(tc @ tc), 1e-12)
+    resid = ys - ys.mean(axis=0) - np.outer(tc, slopes)
+    total = float(((ys - ys.mean(axis=0)) ** 2).sum())
+    return slopes, (1 - float((resid ** 2).sum()) / total) if total > 1e-12 else 0.0
+
+
+def steady_motion(series: np.ndarray, n_pairs: float) -> tuple[float, float, float]:
+    """(scale, dx, dy) over n_pairs frame pairs, from per-pair steps (rows: pair index, dlog scale, dx, dy).
+    Zoom (log scale) and centre position are each fitted with a straight line over time; a path that wanders
+    back and forth (handheld shake) fits badly and counts as no motion."""
+    t = np.concatenate([[0.0], series[:, 0] + 1])
+    path = np.vstack([np.zeros(3), np.cumsum(series[:, 1:], axis=0)])
+    zoom, r2_zoom = _line_fit(t, path[:, :1])
+    shift, r2_shift = _line_fit(t, path[:, 1:])
+    log_s = float(zoom[0]) * n_pairs if r2_zoom >= MIN_R2 else 0.0
+    dx, dy = (float(v) * n_pairs for v in shift) if r2_shift >= MIN_R2 else (0.0, 0.0)
+    return math.exp(log_s), dx, dy
+
+
+def _best_series(frames_gray: list[np.ndarray]) -> np.ndarray | None:
+    """track_series, ignoring static overlays: when the frame moves, features that stay put (burnt-in text)
     pull the fit towards no motion, so fit again without them and keep the larger move if enough is left."""
-    first = track_motion(frames_gray)
-    if first is None or classify(*first)["type"] == "static":
+    n = len(frames_gray) - 1
+    first = track_series(frames_gray)
+    if first is None or classify(*steady_motion(first, n))["type"] == "static":
         return first
     mask = static_mask(frames_gray)
-    second = track_motion(frames_gray, mask, REFIT_PX) if mask is not None else None
-    return second if second is not None and _magnitude(second) > _magnitude(first) else first
+    second = track_series(frames_gray, mask, REFIT_PX) if mask is not None else None
+    if second is not None and _magnitude(steady_motion(second, n)) > _magnitude(steady_motion(first, n)):
+        return second
+    return first
+
+
+def window_motion(frames_gray: list[np.ndarray]) -> tuple[float, float, float] | None:
+    """Steady camera motion (scale, dx, dy) across the frames, or None if too little can be tracked."""
+    series = _best_series(frames_gray)
+    return None if series is None else steady_motion(series, len(frames_gray) - 1)
 
 
 def track_motion(frames_gray: list[np.ndarray], mask: np.ndarray | None = None,
                  ransac_px: float = RANSAC_PX) -> tuple[float, float, float] | None:
-    """(total scale, centre dx, centre dy as shares of the frame), or None if too little can be tracked.
-    Features are only picked where `mask` is non-zero."""
+    """Summed (scale, centre dx, centre dy) over the tracked frame pairs, or None if too little can be tracked."""
+    series = track_series(frames_gray, mask, ransac_px)
+    if series is None:
+        return None
+    total = series[:, 1:].sum(axis=0)
+    return math.exp(total[0]), float(total[1]), float(total[2])
+
+
+def track_series(frames_gray: list[np.ndarray], mask: np.ndarray | None = None,
+                 ransac_px: float = RANSAC_PX) -> np.ndarray | None:
+    """Per frame pair (rows: pair index, dlog scale, centre dx, centre dy as shares of the frame) for the
+    pairs that could be tracked, or None if too few could. Features are only picked where `mask` is non-zero."""
     h, w = frames_gray[0].shape
     centre = np.array([w / 2, h / 2])
-    scale, dx, dy, ok = 1.0, 0.0, 0.0, 0
+    rows = []
     pts = _features(frames_gray[0], mask)
-    for a, b in zip(frames_gray, frames_gray[1:]):
+    for i, (a, b) in enumerate(zip(frames_gray, frames_gray[1:])):
         if pts is None or len(pts) < RESEED:
             pts = _features(a, mask)
         if pts is None or len(pts) < MIN_POINTS:
@@ -95,14 +137,11 @@ def track_motion(frames_gray: list[np.ndarray], mask: np.ndarray | None = None,
             pts = None
             continue
         moved = m[:, :2] @ centre + m[:, 2]
-        scale *= math.hypot(m[0, 0], m[1, 0])
-        dx += (moved[0] - centre[0]) / w
-        dy += (moved[1] - centre[1]) / h
-        ok += 1
+        rows.append((i, math.log(math.hypot(m[0, 0], m[1, 0])), (moved[0] - centre[0]) / w, (moved[1] - centre[1]) / h))
         pts = good_b.reshape(-1, 1, 2)
-    if ok < max(1, (len(frames_gray) - 1) // 2):
+    if len(rows) < max(1, (len(frames_gray) - 1) // 2):
         return None
-    return scale, dx, dy
+    return np.array(rows, dtype=float)
 
 
 def bound_motion(scale: float, dx: float, dy: float) -> tuple[float, float, float]:
@@ -159,7 +198,7 @@ def run(wd: WorkDir, source: Path) -> list[str]:
             continue
         gray = [cv2.cvtColor(fr.cached_frame(wd, k)[y:y + h, x:x + w], cv2.COLOR_BGR2GRAY)
                 for k in range(first, last + 1)]
-        res = measure_motion(gray)
+        res = window_motion(gray)
         if res is None:
             warnings.append(f"shot {i + 1}: too few trackable points, marked static")
             out.append(dict(STATIC))
