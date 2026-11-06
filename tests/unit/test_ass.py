@@ -76,3 +76,30 @@ def test_replace_words_spreads_over_speech_time():
 
 def test_nothing_to_draw_is_none():
     assert build_ass(tpl(), {}) is None
+
+
+def _scale(event):
+    import re
+    m = re.search(r"\\fscx(\d+)\\fscy(\d+)", event)
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def test_long_replacement_is_shrunk_to_fit_the_frame():
+    from vtpl.fontlib import pil_font
+    from vtpl.render.ass import PLAY_W
+    long = "THIS REPLACEMENT IS FAR LONGER THAN THE ORIGINAL"
+    ev = overlay_events(item(**{"in": "none", "in_ms": 0}), long)
+    sx, sy = _scale(ev[0])
+    assert sx == sy < 100                                                       # uniform
+    assert pil_font("Montserrat-Bold", 80).getlength(long) * sx / 100 <= 0.9 * PLAY_W
+    assert "\\pos(270,1008)" in ev[0]                                           # box centre kept
+    assert _scale(overlay_events(item(**{"in": "none", "in_ms": 0}), "SHORT")[0]) is None
+
+
+def test_shrink_applies_to_pop_and_every_typewriter_step():
+    long = "THIS REPLACEMENT IS FAR LONGER THAN THE ORIGINAL"
+    s = _scale(overlay_events(item(**{"in": "none", "in_ms": 0}), long)[0])[0]
+    pop = overlay_events(item(**{"in": "pop", "in_ms": 150}), long)[0]
+    assert f"\\t(100,150,\\fscx{s}\\fscy{s})" in pop and f"\\fscx{round(0.8 * s)}" in pop
+    tw = overlay_events(item(**{"in": "typewriter", "in_ms": 300}), long)
+    assert all(_scale(e) == (s, s) for e in tw)

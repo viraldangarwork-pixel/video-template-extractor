@@ -1,11 +1,12 @@
 """Build an ASS subtitle document for text overlays and karaoke captions."""
-from vtpl.fontlib import FALLBACK_ID, ass_font_size, entry
+from vtpl.fontlib import FALLBACK_ID, ass_font_size, entry, pil_font
 
 PLAY_W, PLAY_H = 1080, 1920
 DEFAULT_CAPTION_STYLE = {"font": FALLBACK_ID, "size_px": 64, "color": "#FFFFFF",
                          "stroke": {"color": "#000000", "px": 4}, "shadow": False}
 DEFAULT_CAPTION_BOX = {"x": 0.1, "y": 0.72, "w": 0.8, "h": 0.06}
 LINE_WORDS, LINE_GAP_MS = 3, 600
+MAX_WIDTH = 0.9          # overlays wider than this share of the frame are scaled down to fit
 
 HEADER = """[Script Info]
 ScriptType: v4.00+
@@ -58,9 +59,21 @@ def _dialogue(start: int, end: int, style: str, tags: str, body: str) -> str:
     return f"Dialogue: 0,{ass_time(start)},{ass_time(end)},{style},,0,0,0,,{{{tags}}}{body}"
 
 
+def fit_scale(text: str, st: dict) -> int:
+    """Uniform \\fscx/\\fscy percentage (100 = as is) that keeps the widest line of `text`, stroke
+    included, within MAX_WIDTH of the frame. WrapStyle 2 never wraps, so long text would run off."""
+    font = pil_font(st["font"], st["size_px"])
+    stroke = 2 * st["stroke"]["px"] if st.get("stroke") else 0
+    width = max(font.getlength(line) for line in text.split("\n"))
+    room = MAX_WIDTH * PLAY_W - stroke                       # the outline is not scaled with the text
+    return 100 if width <= room else max(1, int(room * 100 / width))
+
+
 def overlay_events(item: dict, text: str) -> list[str]:
     if text == "":
         return []
+    sc = fit_scale(text, item["style"])
+    fit = f"\\fscx{sc}\\fscy{sc}" if sc < 100 else ""
     start, end = item["start_ms"], item["end_ms"]
     dur = end - start
     a = item["anim"]
@@ -76,7 +89,8 @@ def overlay_events(item: dict, text: str) -> list[str]:
     in_tags, out_tags = "", ""
     if a["in"] == "pop":
         k = round(in_ms * 2 / 3)
-        in_tags = f"\\fscx80\\fscy80\\t(0,{k},\\fscx115\\fscy115)\\t({k},{in_ms},\\fscx100\\fscy100)"
+        lo, hi = round(0.8 * sc), round(1.15 * sc)
+        in_tags = f"\\fscx{lo}\\fscy{lo}\\t(0,{k},\\fscx{hi}\\fscy{hi})\\t({k},{in_ms},\\fscx{sc}\\fscy{sc})"
     if a["out"] == "pop":
         out_tags = f"\\t({dur - out_ms},{dur},\\fscx0\\fscy0)"
     fade_in = in_ms if a["in"] == "fade" else 0
@@ -91,10 +105,11 @@ def overlay_events(item: dict, text: str) -> list[str]:
             s = start + round(in_ms * (k - 1) / n)
             e = start + round(in_ms * k / n) if k < n else end
             body = escape(text[:k]) + ("{\\alpha&HFF&}" + escape(text[k:]) if k < n else "")
-            tags = f"\\an5{pos}" + (out_tags + (f"\\fad(0,{fade_out})" if fade_out else "") if k == n else "")
+            tags = f"\\an5{pos}{fit}" + (out_tags + (f"\\fad(0,{fade_out})" if fade_out else "") if k == n else "")
             events.append(_dialogue(s, e, name, tags, body))
         return events
-    return [_dialogue(start, end, name, f"\\an5{pos}{fad}{in_tags}{out_tags}", escape(text))]
+    fit = "" if a["in"] == "pop" else fit                  # the pop's own scale tags include it
+    return [_dialogue(start, end, name, f"\\an5{pos}{fit}{fad}{in_tags}{out_tags}", escape(text))]
 
 
 def caption_lines(words: list[dict]) -> list[list[dict]]:
