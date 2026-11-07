@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: vtpl-web
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - VTPL_WHISPER_MODEL=small
+      - MAX_UPLOAD_MB=100
+      - AD_CLIENT_ID=${AD_CLIENT_ID:-}
+      - CANONICAL_URL=${CANONICAL_URL:-http://localhost:8000}
+      - MAX_CONCURRENT_JOBS=2
+    volumes:
+      # Persist extracted templates and uploads
+      - ./work:/app/work
+    restart: unless-stopped

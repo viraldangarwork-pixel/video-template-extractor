@@ -24,6 +24,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "fonttools>=4.40"]
+web = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.28",
+  "python-multipart>=0.0.9",
+  "jinja2>=3.1"
+]
 
 [project.scripts]
 vtpl = "vtpl.cli:app"
@@ -37,4 +43,10 @@ testpaths = ["tests"]
 markers = ["slow: runs FFmpeg on generated videos"]
 
 [tool.setuptools.package-data]
-vtpl = ["assets/fonts/*.ttf", "assets/fonts/*.json", "assets/fonts/*.md"]
+vtpl = [
+  "assets/fonts/*.ttf",
+  "assets/fonts/*.json",
+  "assets/fonts/*.md",
+  "web/templates/*.html",
+  "web/static/*"
+]

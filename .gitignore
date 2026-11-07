@@ -1,9 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Work output & temporary media caches
 work/
+mine/
 *.mp4
 *.mov
+*.m4v
+*.webm
 *.wav
-__pycache__/
-.venv/
+*.mp3
+*.ass
+*.log
+
+# Environment variables & secrets
+.env
+.env.local
+
+# Testing & Coverage
 .pytest_cache/
+.coverage
+htmlcov/
+
+# Golden evaluation assets
 golden/
-*.egg-info/
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

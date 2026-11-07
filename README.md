@@ -75,3 +75,42 @@ Known limits of motion and grade:
 pytest                 # all tests
 pytest -m "not slow"   # unit tests only, no FFmpeg
 ```
+
+
+## Web App (UI, API, Ads & SEO)
+
+You can launch the web interface to upload videos, view live real-time analysis progress, preview extracted templates, and download `template.json`.
+
+### Local Launch
+
+```bash
+# Start the web app
+vtpl serve --port 8000
+
+# Open in browser
+http://localhost:8000
+```
+
+### Features
+* **Drag-and-Drop Uploader**: Fast upload with live 9-stage analysis checklist via Server-Sent Events (SSE).
+* **Instant Sample Viewer**: Test without uploading via the pre-cached reel demo.
+* **Template Inspector**: View detected shots, camera zoom motion, and OCR text overlays with fonts and colors.
+* **Monetization Ready**: Configurable Google AdSense slots (leaderboard, native in-content, and result banners). Set `AD_CLIENT_ID=ca-pub-XXXXXXXXXXXX` in `.env`.
+* **SEO Optimized**: Complete metadata, Open Graph cards, Twitter cards, sitemap (`/sitemap.xml`), robots (`/robots.txt`), and Schema.org JSON-LD (`SoftwareApplication`, `HowTo`, `FAQPage`).
+
+### Cloud Deployment
+
+#### Option 1: Docker / Docker Compose
+```bash
+docker compose up --build -d
+```
+
+#### Option 2: Railway / Render
+This repository includes `Dockerfile`, `railway.json`, and `render.yaml`.
+1. Push code to your Git repository (GitHub / GitLab).
+2. Connect your repo in Railway or Render.
+3. Select **Docker** environment.
+4. Set optional environment variables:
+   * `AD_CLIENT_ID`: Your Google AdSense publisher ID
+   * `CANONICAL_URL`: Your production domain (e.g. `https://my-vtpl-app.com`)
+   * `VTPL_WHISPER_MODEL`: `small` or `tiny` (default `small`)

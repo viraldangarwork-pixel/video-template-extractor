@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: vtpl-web
+    runtime: docker
+    plan: starter
+    region: oregon
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: VTPL_WHISPER_MODEL
+        value: small
+      - key: MAX_UPLOAD_MB
+        value: 100
+      - key: AD_CLIENT_ID
+        sync: false
+      - key: CANONICAL_URL
+        sync: false

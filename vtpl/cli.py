@@ -97,3 +97,15 @@ def eval_cmd(
     for w in result["warnings"]:
         typer.echo(f"Warning: {w}")
     typer.echo(format_report(result["videos"], result["summary"]))
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", help="Host address to bind"),
+    port: int = typer.Option(8000, help="Port to listen on"),
+    reload: bool = typer.Option(False, "--reload", help="Enable live code reload"),
+):
+    """Start the web UI and API server."""
+    import uvicorn
+    typer.echo(f"Starting vtpl web server on http://{host}:{port} ...")
+    uvicorn.run("vtpl.web.app:app", host=host, port=port, reload=reload)
