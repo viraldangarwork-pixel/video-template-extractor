@@ -211,9 +211,17 @@ async def sitemap():
     return Response(content=content, media_type="application/xml")
 
 
-@app.get("/healthz")
-async def healthz():
-    return {"status": "ok", "time": time.time()}
+@app.api_route("/healthz", methods=["GET", "HEAD"])
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check(request: Request):
+    if request.method == "HEAD":
+        return Response(status_code=200, media_type="application/json")
+    return {
+        "status": "healthy",
+        "time": time.time(),
+        "service": "vtpl-backend",
+        "version": "1.0.0",
+    }
 
 
 @app.post("/api/upload")

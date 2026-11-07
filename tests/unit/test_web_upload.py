@@ -45,3 +45,21 @@ def test_upload_valid_small_clip():
     data = response.json()
     assert "job_id" in data
     assert data["status"] == "queued"
+
+
+def test_health_endpoints_get():
+    for path in ["/healthz", "/health"]:
+        res = client.get(path)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "healthy"
+        assert "time" in data
+
+
+def test_health_endpoints_head():
+    for path in ["/healthz", "/health"]:
+        res = client.head(path)
+        assert res.status_code == 200
+        # HEAD response must have empty content body
+        assert res.content == b""
+

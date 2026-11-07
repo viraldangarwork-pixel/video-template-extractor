@@ -9,6 +9,10 @@
     {
       "source": "/healthz",
       "destination": "https://video-template-extractor.onrender.com/healthz"
+    },
+    {
+      "source": "/health",
+      "destination": "https://video-template-extractor.onrender.com/health"
     }
   ],
   "headers": [
