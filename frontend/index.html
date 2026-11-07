@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Template Extractor & Studio | Reverse Engineer Reels, Shorts & TikToks</title>
+  
+  <!-- Primary SEO Meta Tags -->
+  <meta name="title" content="AI Video Template Extractor & Studio | Reverse Engineer Reels, Shorts & TikToks">
+  <meta name="description" content="Extract editable templates from Instagram Reels, TikToks, and YouTube Shorts. Decode shot cuts, audio beats, camera motion, and edit typography & color palettes in real-time. Convert back to MP4 easily.">
+  <meta name="keywords" content="video template extractor, reel template, tiktok template generator, template decoder, color palette switcher, youtube shorts template, reverse engineer video, video to json, video motion tracking, render mp4 online">
+  <meta name="author" content="vtpl">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://vtpl.app">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vtpl.app">
+  <meta property="og:title" content="AI Video Template Extractor & Studio">
+  <meta property="og:description" content="Decode and extract viral video templates. Edit typography, swap color palettes, and render to MP4 in 1 click.">
+  <meta property="og:image" content="/favicon.svg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:title" content="AI Video Template Extractor & Studio">
+  <meta property="twitter:description" content="Decode video templates, customize text overlays, swap color palettes, and render to MP4.">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#07090E',
+            surface: '#0E131F',
+            surfaceBorder: '#1C2638',
+            cyberCyan: '#00F0FF',
+            cyberViolet: '#8B5CF6',
+            cyberPink: '#FF007F'
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- JSON-LD Structured Data for Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "vtpl — AI Video Template Extractor & Studio",
+        "operatingSystem": "Web-based",
+        "applicationCategory": "MultimediaApplication",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Reverse-engineer and decode short-form viral videos into editable templates with real-time typography editing, color palette customization, and 1-click MP4 video rendering."
+      },
+      {
+        "@type": "HowTo",
+        "name": "How to Extract, Decode and Convert Video Templates to MP4",
+        "step": [
+          {"@type": "HowToStep", "name": "Upload or Decode", "text": "Upload a Reel or paste an existing template.json."},
+          {"@type": "HowToStep", "name": "Customize Color Palette & Text", "text": "Swap font colors with 1-click palettes or edit text overlays directly."},
+          {"@type": "HowToStep", "name": "Convert to MP4 Video", "text": "Click 'Convert to MP4' to render the final video with your customized captions."}
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    body {
+      background-color: #07090E;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 240, 255, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(255, 0, 127, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+    .ad-placeholder {
+      background: repeating-linear-gradient(45deg, #0e131f, #0e131f 10px, #07090e 10px, #07090e 20px);
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen font-sans flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="border-b border-surfaceBorder/80 bg-obsidian/80 backdrop-blur-xl sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 via-violet-500 to-pink-500 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+          <div class="w-full h-full bg-obsidian rounded-[10px] flex items-center justify-center">
+            <i data-lucide="clapperboard" class="w-5 h-5 text-cyan-400"></i>
+          </div>
+        </div>
+        <div>
+          <span class="text-xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-violet-200 to-pink-300 bg-clip-text text-transparent">vtpl</span>
+          <span class="text-xs ml-2 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-semibold tracking-wide uppercase">Studio</span>
+        </div>
+      </a>
+
+      <div class="flex items-center gap-2.5">
+        <!-- Backend API Server Status / Config -->
+        <button onclick="openApiConfigModal()" id="backend-status-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surfaceBorder border border-surfaceBorder text-slate-300 text-xs font-medium transition-all" title="Click to configure Render Backend URL">
+          <span id="backend-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="backend-label" class="hidden sm:inline">Backend API</span>
+          <i data-lucide="settings" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
+        </button>
+
+        <button onclick="openDecodeModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surfaceBorder text-cyan-400 border border-cyan-500/30 text-xs font-semibold hover:border-cyan-400 transition-all shadow-sm">
+          <i data-lucide="file-json" class="w-3.5 h-3.5"></i> Decode JSON
+        </button>
+        <button onclick="loadSample()" class="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-black font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Try Sample Reel
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOP AD BANNER SLOT (LEADERBOARD) -->
+  <div class="w-full max-w-5xl mx-auto px-4 pt-4">
+    <div id="top-ad-slot" class="ad-placeholder rounded-xl border border-surfaceBorder p-3 text-center flex flex-col items-center justify-center min-h-[70px] text-xs text-slate-500">
+      <span class="text-[10px] tracking-wider uppercase text-slate-400 font-bold mb-0.5">Advertisement Banner (728x90)</span>
+      <span class="text-slate-500">Monetization Ready for Google AdSense or Custom Ad Networks</span>
+    </div>
+  </div>
+
+  <!-- MAIN HERO & WORKSPACE CONTAINER -->
+  <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full">
+    
+    <!-- Hero Header -->
+    <div class="text-center max-w-3xl mx-auto mb-8">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-4 shadow-inner">
+        <i data-lucide="palette" class="w-3.5 h-3.5 text-pink-400"></i>
+        <span>AI Video Template Extractor & MP4 Studio</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-3 leading-tight">
+        Reverse Engineer Reels, <br class="hidden sm:inline" />
+        <span class="bg-gradient-to-r from-cyan-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">Edit & Render to MP4</span>
+      </h1>
+      <p class="text-sm sm:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
+        Extract exact cuts, beats & typography from any Reel or TikTok. Swap color palettes, customize text headlines, and convert to MP4 in one click.
+      </p>
+    </div>
+
+    <!-- MAIN CARD WRAPPER -->
+    <div class="bg-surface/90 border border-surfaceBorder rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      
+      <!-- Ambient Glow Accents -->
+      <div class="absolute -top-32 -right-32 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-32 -left-32 w-80 h-80 bg-violet-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- 1. UPLOAD VIEW -->
+      <section id="upload-view" class="relative z-10">
+        <div id="dropzone" class="border-2 border-dashed border-surfaceBorder hover:border-cyan-400/80 bg-obsidian/60 rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer group">
+          <input type="file" id="file-input" accept="video/mp4,video/quicktime,video/webm,video/x-matroska" class="hidden">
+          
+          <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-cyan-500/10">
+            <i data-lucide="video" class="w-8 h-8"></i>
+          </div>
+          
+          <h3 class="text-xl font-bold text-white mb-1.5">Drop your Reel, Short or TikTok video</h3>
+          <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6">
+            Supports MP4, MOV, WEBM (up to 50MB on free plan). Runs automated cut detection, beat tracking, and OCR typography extraction.
+          </p>
+
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <button type="button" onclick="document.getElementById('file-input').click()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-bold text-sm shadow-lg shadow-cyan-400/25 transition-all">
+              Choose Video File
+            </button>
+            <button type="button" onclick="loadSample()" class="px-5 py-2.5 rounded-xl bg-surface hover:bg-surfaceBorder text-slate-200 font-semibold text-sm border border-cyan-500/30 transition-all flex items-center gap-2">
+              <i data-lucide="play-circle" class="w-4 h-4 text-pink-400"></i> Try Sample Reel
+            </button>
+            <button type="button" onclick="openDecodeModal()" class="px-4 py-2.5 rounded-xl bg-surface hover:bg-surfaceBorder text-slate-300 font-semibold text-sm border border-surfaceBorder transition-all flex items-center gap-2">
+              <i data-lucide="code" class="w-4 h-4 text-violet-400"></i> Decode Existing JSON
+            </button>
+          </div>
+          
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">
+            <span><i data-lucide="cpu" class="w-3.5 h-3.5 inline text-cyan-400"></i> Render Backend Engine</span>
+            <span><i data-lucide="play" class="w-3.5 h-3.5 inline text-cyan-400"></i> 1-Click MP4 Rendering</span>
+            <span><i data-lucide="palette" class="w-3.5 h-3.5 inline text-cyan-400"></i> Color Customizer</span>
+          </div>
+        </div>
+
+        <div id="upload-error" class="hidden mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="upload-error-msg"></span>
+        </div>
+      </section>
+
+      <!-- 2. LIVE PROGRESS PIPELINE VIEW -->
+      <section id="progress-view" class="hidden relative z-10">
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center gap-2 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span>Reverse Engineering Video</span>
+          </div>
+          <h3 id="progress-status-title" class="text-2xl font-bold text-white">Extracting Reel Template...</h3>
+          <p id="progress-message" class="text-xs sm:text-sm text-slate-400 mt-1">Starting analysis pipeline...</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-obsidian rounded-full h-3 mb-8 overflow-hidden p-0.5 border border-surfaceBorder">
+          <div id="progress-bar" class="bg-gradient-to-r from-cyan-400 via-violet-500 to-pink-500 h-full rounded-full transition-all duration-300" style="width: 5%"></div>
+        </div>
+
+        <!-- 9 Pipeline Stages Checklist -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5" id="stages-grid"></div>
+
+        <div class="mt-6 text-center text-xs text-slate-500">
+          This takes ~20-60s on average for high-resolution OCR text tracking. Please keep this tab open.
+        </div>
+      </section>
+
+      <!-- 3. TEMPLATE STUDIO & RESULTS DASHBOARD -->
+      <section id="results-view" class="hidden relative z-10">
+        
+        <!-- Header Actions -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-surfaceBorder mb-6">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-bold tracking-wide uppercase">Decoded Template</span>
+              <h3 class="text-xl sm:text-2xl font-extrabold text-white">Template Studio</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Edit typography, swap color palettes, or convert directly into an MP4 video.</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 1-Click Render MP4 Button -->
+            <button onclick="renderVideoOnline()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-pink-500/25 flex items-center gap-1.5 transition-all">
+              <i data-lucide="play" class="w-4 h-4 fill-white"></i> Convert to MP4
+            </button>
+            <button onclick="downloadModifiedTemplate()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-bold text-xs shadow-lg shadow-cyan-400/20 flex items-center gap-1.5 transition-all">
+              <i data-lucide="download" class="w-4 h-4"></i> Save template.json
+            </button>
+            <button onclick="downloadTextsYaml()" class="px-3.5 py-2.5 rounded-xl bg-surface hover:bg-surfaceBorder text-slate-200 border border-cyan-500/30 font-semibold text-xs flex items-center gap-1.5 transition-all">
+              <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i> Export texts.yaml
+            </button>
+            <button onclick="resetApp()" class="px-3 py-2.5 rounded-xl bg-surface hover:bg-surfaceBorder text-slate-400 hover:text-white border border-surfaceBorder text-xs transition-all">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 mb-6">
+          <div class="bg-obsidian/70 border border-surfaceBorder p-3 rounded-xl text-center">
+            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Resolution</span>
+            <div id="stat-res" class="text-sm font-bold text-slate-200 mt-0.5">--</div>
+          </div>
+          <div class="bg-obsidian/70 border border-surfaceBorder p-3 rounded-xl text-center">
+            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Duration</span>
+            <div id="stat-duration" class="text-sm font-bold text-slate-200 mt-0.5">--</div>
+          </div>
+          <div class="bg-obsidian/70 border border-surfaceBorder p-3 rounded-xl text-center">
+            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">FPS</span>
+            <div id="stat-fps" class="text-sm font-bold text-slate-200 mt-0.5">--</div>
+          </div>
+          <div class="bg-obsidian/70 border border-surfaceBorder p-3 rounded-xl text-center">
+            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Tempo</span>
+            <div id="stat-bpm" class="text-sm font-bold text-cyan-400 mt-0.5">-- BPM</div>
+          </div>
+          <div class="bg-obsidian/70 border border-surfaceBorder p-3 rounded-xl text-center">
+            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Shots</span>
+            <div id="stat-shots" class="text-sm font-bold text-violet-400 mt-0.5">--</div>
+          </div>
+          <div class="bg-obsidian/70 border border-surfaceBorder p-3 rounded-xl text-center">
+            <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Text Overlays</span>
+            <div id="stat-texts" class="text-sm font-bold text-pink-400 mt-0.5">--</div>
+          </div>
+        </div>
+
+        <!-- COLOR PALETTE SWITCHER BAR -->
+        <div class="bg-gradient-to-r from-obsidian via-surface to-obsidian border border-cyan-500/25 rounded-2xl p-4 sm:p-5 mb-6 shadow-lg shadow-cyan-950/30">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
+            <div>
+              <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="palette" class="w-4 h-4 text-cyan-400"></i> Instant Color Palette Switcher
+              </h4>
+              <p class="text-xs text-slate-400 mt-0.5">Apply harmonious color schemes across all extracted text overlays with 1 click.</p>
+            </div>
+            
+            <!-- Custom Color Pickers -->
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] text-slate-400 font-medium">Custom:</label>
+              <input type="color" id="custom-color-primary" value="#00F0FF" title="Primary Color" class="w-7 h-7 rounded-lg border border-surfaceBorder cursor-pointer bg-transparent">
+              <input type="color" id="custom-color-secondary" value="#FF007F" title="Secondary Color" class="w-7 h-7 rounded-lg border border-surfaceBorder cursor-pointer bg-transparent">
+              <button onclick="applyCustomPalette()" class="px-2.5 py-1 rounded-lg bg-surface hover:bg-surfaceBorder border border-surfaceBorder text-slate-200 text-xs font-semibold">
+                Apply
+              </button>
+            </div>
+          </div>
+
+          <!-- 6 Palette Presets -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <button onclick="applyPalettePreset('cyber')" class="flex items-center gap-2 p-2 rounded-xl bg-obsidian/90 hover:bg-obsidian border border-surfaceBorder hover:border-cyan-400 transition-all text-left">
+              <div class="flex -space-x-1.5 shrink-0">
+                <span class="w-4 h-4 rounded-full bg-[#00F0FF] border border-obsidian"></span>
+                <span class="w-4 h-4 rounded-full bg-[#FF007F] border border-obsidian"></span>
+              </div>
+              <span class="text-xs font-medium text-slate-200">Cyber Neon</span>
+            </button>
+
+            <button onclick="applyPalettePreset('gold')" class="flex items-center gap-2 p-2 rounded-xl bg-obsidian/90 hover:bg-obsidian border border-surfaceBorder hover:border-amber-400 transition-all text-left">
+              <div class="flex -space-x-1.5 shrink-0">
+                <span class="w-4 h-4 rounded-full bg-[#F59E0B] border border-obsidian"></span>
+                <span class="w-4 h-4 rounded-full bg-[#FDE68A] border border-obsidian"></span>
+              </div>
+              <span class="text-xs font-medium text-slate-200">Luxury Gold</span>
+            </button>
+
+            <button onclick="applyPalettePreset('sunset')" class="flex items-center gap-2 p-2 rounded-xl bg-obsidian/90 hover:bg-obsidian border border-surfaceBorder hover:border-rose-400 transition-all text-left">
+              <div class="flex -space-x-1.5 shrink-0">
+                <span class="w-4 h-4 rounded-full bg-[#F43F5E] border border-obsidian"></span>
+                <span class="w-4 h-4 rounded-full bg-[#FB923C] border border-obsidian"></span>
+              </div>
+              <span class="text-xs font-medium text-slate-200">Sunset Flame</span>
+            </button>
+
+            <button onclick="applyPalettePreset('emerald')" class="flex items-center gap-2 p-2 rounded-xl bg-obsidian/90 hover:bg-obsidian border border-surfaceBorder hover:border-emerald-400 transition-all text-left">
+              <div class="flex -space-x-1.5 shrink-0">
+                <span class="w-4 h-4 rounded-full bg-[#10B981] border border-obsidian"></span>
+                <span class="w-4 h-4 rounded-full bg-[#6EE7B7] border border-obsidian"></span>
+              </div>
+              <span class="text-xs font-medium text-slate-200">Emerald Jade</span>
+            </button>
+
+            <button onclick="applyPalettePreset('violet')" class="flex items-center gap-2 p-2 rounded-xl bg-obsidian/90 hover:bg-obsidian border border-surfaceBorder hover:border-violet-400 transition-all text-left">
+              <div class="flex -space-x-1.5 shrink-0">
+                <span class="w-4 h-4 rounded-full bg-[#8B5CF6] border border-obsidian"></span>
+                <span class="w-4 h-4 rounded-full bg-[#C084FC] border border-obsidian"></span>
+              </div>
+              <span class="text-xs font-medium text-slate-200">Cosmic Violet</span>
+            </button>
+
+            <button onclick="applyPalettePreset('mono')" class="flex items-center gap-2 p-2 rounded-xl bg-obsidian/90 hover:bg-obsidian border border-surfaceBorder hover:border-white transition-all text-left">
+              <div class="flex -space-x-1.5 shrink-0">
+                <span class="w-4 h-4 rounded-full bg-[#FFFFFF] border border-obsidian"></span>
+                <span class="w-4 h-4 rounded-full bg-[#94A3B8] border border-obsidian"></span>
+              </div>
+              <span class="text-xs font-medium text-slate-200">Ice Silver</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE TEXT OVERLAYS EDITOR -->
+        <div class="bg-obsidian/70 border border-surfaceBorder rounded-2xl p-4 sm:p-5 mb-6">
+          <div class="flex items-center justify-between mb-3.5">
+            <div>
+              <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="type" class="w-4 h-4 text-pink-400"></i> Decoded Text Overlays (Live Editor)
+              </h4>
+              <p class="text-xs text-slate-400 mt-0.5">Edit headline texts or individual colors in real-time before rendering.</p>
+            </div>
+            <span id="text-items-count" class="text-xs font-mono text-cyan-400"></span>
+          </div>
+
+          <!-- Text items container -->
+          <div id="editable-texts-container" class="space-y-2.5 max-h-96 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- SHOT MOTION BREAKDOWN -->
+        <div class="bg-obsidian/70 border border-surfaceBorder rounded-2xl p-4 mb-6">
+          <h4 class="text-sm font-bold text-white flex items-center gap-2 mb-3">
+            <i data-lucide="film" class="w-4 h-4 text-violet-400"></i> Shot Sequence & Camera Motion
+          </h4>
+          <div id="shots-list" class="space-y-2"></div>
+        </div>
+
+        <!-- RE-RENDER TERMINAL INSTRUCTION -->
+        <div class="bg-gradient-to-r from-obsidian via-surface to-obsidian border border-cyan-500/20 rounded-2xl p-4 mb-6">
+          <div class="flex items-center justify-between mb-1.5">
+            <h4 class="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+              <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Render via Command Line (Alternative)
+            </h4>
+            <span class="text-[10px] text-slate-400 font-mono">CLI Command</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-2">
+            You can also render via terminal: place clips in <code class="text-cyan-300">./mine</code>, place <code class="text-pink-300">texts.yaml</code>, and run:
+          </p>
+          <div class="bg-obsidian rounded-xl p-3 border border-surfaceBorder font-mono text-xs text-slate-300 flex items-center justify-between">
+            <span id="cli-cmd-display">vtpl render template.json --media ./mine --out out.mp4 --snap-to-beats</span>
+            <button onclick="copyCliCommand()" class="text-cyan-400 hover:text-cyan-300 text-xs px-2.5 py-1 bg-cyan-950/60 rounded border border-cyan-500/30 font-semibold">
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- RAW JSON INSPECTOR -->
+        <details class="group bg-obsidian/40 border border-surfaceBorder rounded-2xl p-4">
+          <summary class="flex items-center justify-between cursor-pointer list-none text-xs font-bold text-slate-300 hover:text-white uppercase tracking-wider">
+            <span class="flex items-center gap-2"><i data-lucide="code" class="w-4 h-4 text-slate-400"></i> View Raw template.json</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="mt-4 pt-3 border-t border-surfaceBorder">
+            <pre id="json-viewer" class="text-[11px] font-mono text-cyan-300 bg-obsidian p-4 rounded-xl overflow-x-auto max-h-96"></pre>
+          </div>
+        </details>
+
+      </section>
+
+    </div>
+
+    <!-- IN-CONTENT AD SLOT -->
+    <div class="w-full my-8">
+      <div id="native-ad-slot" class="ad-placeholder rounded-2xl border border-surfaceBorder p-4 text-center flex flex-col items-center justify-center min-h-[80px] text-xs text-slate-500">
+        <span class="text-[10px] tracking-wider uppercase text-slate-400 font-bold mb-0.5">Sponsored Placement</span>
+        <span class="text-slate-500">Google AdSense Native In-Content Ad Slot</span>
+      </div>
+    </div>
+
+    <!-- SEO HOW IT WORKS -->
+    <section id="how-it-works" class="py-8">
+      <div class="text-center max-w-2xl mx-auto mb-8">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">How to Reverse-Engineer & Render Templates</h2>
+        <p class="text-xs sm:text-sm text-slate-400">Extract, decode, customize color palettes, and re-render to MP4 in 3 steps.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-surface/50 border border-surfaceBorder p-5 rounded-2xl">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 font-bold flex items-center justify-center mb-3">1</div>
+          <h3 class="text-base font-bold text-white mb-1.5">1. Analyze Reel / Short</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Upload your short-form video. The AI pipeline runs PySceneDetect, Librosa audio beat tracking, and RapidOCR to extract every shot cut, camera motion, and text overlay.
+          </p>
+        </div>
+
+        <div class="bg-surface/50 border border-surfaceBorder p-5 rounded-2xl">
+          <div class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 font-bold flex items-center justify-center mb-3">2</div>
+          <h3 class="text-base font-bold text-white mb-1.5">2. Customize Palettes & Text</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Use the Template Studio to swap text colors across all overlays with presets (Cyber Neon, Luxury Gold, Sunset Flame) or replace headlines directly in the browser.
+          </p>
+        </div>
+
+        <div class="bg-surface/50 border border-surfaceBorder p-5 rounded-2xl">
+          <div class="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 font-bold flex items-center justify-center mb-3">3</div>
+          <h3 class="text-base font-bold text-white mb-1.5">3. 1-Click Convert to MP4</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Click 'Convert to MP4' to automatically generate a brand new video with your custom text overlays, synchronized audio, and camera movements.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LIVE RENDER PREVIEW MODAL -->
+  <div id="render-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-surface border border-pink-500/30 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="video" class="w-4 h-4 text-pink-400"></i> Rendered MP4 Video
+        </h3>
+        <button onclick="closeRenderModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <!-- Rendering spinner -->
+      <div id="render-loading-state" class="py-10 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-pink-400 flex items-center justify-center mx-auto mb-3 animate-spin">
+          <i data-lucide="loader-2" class="w-6 h-6"></i>
+        </div>
+        <h4 class="text-sm font-bold text-white mb-1">Rendering Video via FFmpeg...</h4>
+        <p class="text-xs text-slate-400 max-w-xs mx-auto">
+          Burning your custom text overlays, color palette, and camera motion. Takes ~15-25 seconds.
+        </p>
+      </div>
+
+      <!-- Result state with video player -->
+      <div id="render-result-state" class="hidden text-center">
+        <div class="rounded-2xl overflow-hidden border border-surfaceBorder bg-black max-w-xs mx-auto mb-4 shadow-xl">
+          <video id="rendered-video-player" controls playsinline class="w-full max-h-[460px] object-contain"></video>
+        </div>
+        <div class="flex items-center justify-center gap-2.5">
+          <a id="download-rendered-btn" href="#" download="rendered_reel.mp4" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-pink-500/25 flex items-center gap-2 transition-all">
+            <i data-lucide="download" class="w-4 h-4"></i> Download MP4
+          </a>
+          <button onclick="closeRenderModal()" class="px-4 py-2.5 rounded-xl bg-surfaceBorder hover:bg-surface text-slate-300 text-xs font-semibold">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECODE TEMPLATE MODAL -->
+  <div id="decode-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-surface border border-cyan-500/30 rounded-2xl p-6 max-w-xl w-full shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="file-json" class="w-5 h-5 text-cyan-400"></i> Decode Existing template.json
+        </h3>
+        <button onclick="closeDecodeModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">
+        Paste any existing <code class="text-cyan-400">template.json</code> content below to decode its shots, edit text overlays, and apply new color palettes:
+      </p>
+      <textarea id="decode-json-input" rows="8" placeholder='{ "version": 1, "meta": { ... }, "shots": [...], "texts": [...] }' class="w-full bg-obsidian border border-surfaceBorder rounded-xl p-3 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400 resize-none mb-4"></textarea>
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeDecodeModal()" class="px-4 py-2 rounded-xl bg-surfaceBorder text-slate-300 text-xs font-semibold">Cancel</button>
+        <button onclick="submitDecodedJson()" class="px-5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-bold shadow-lg shadow-cyan-400/20">Decode & Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API BACKEND CONFIG MODAL -->
+  <div id="api-config-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-surface border border-cyan-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="server" class="w-5 h-5 text-cyan-400"></i> Backend API Connection
+        </h3>
+        <button onclick="closeApiConfigModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">
+        Connect to your Render backend (e.g. <code class="text-cyan-300">https://your-app.onrender.com</code>). Leave empty if using Vercel rewrites or local server.
+      </p>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-300 mb-1">Backend URL:</label>
+        <div class="flex gap-2">
+          <input type="url" id="backend-url-input" placeholder="https://video-template-extractor.onrender.com" class="flex-1 bg-obsidian border border-surfaceBorder rounded-xl px-3 py-2 text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 font-mono">
+          <button type="button" onclick="testBackendConnection()" class="px-3 py-2 rounded-xl bg-surfaceBorder hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 text-xs font-medium border border-cyan-500/30 whitespace-nowrap">Test Ping</button>
+        </div>
+        <div id="api-test-result" class="hidden text-xs mt-2.5"></div>
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="clearBackendConfig()" class="px-3.5 py-2 rounded-xl bg-surfaceBorder text-slate-400 hover:text-slate-200 text-xs">Reset to Default</button>
+        <button onclick="saveBackendConfig()" class="px-5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-bold">Save Connection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-surfaceBorder bg-obsidian py-6 text-center text-xs text-slate-500">
+    <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-5 h-5 rounded bg-gradient-to-tr from-cyan-400 to-pink-500 flex items-center justify-center text-black text-[10px] font-black">V</div>
+        <span class="font-semibold text-slate-400">vtpl Studio — Video Template Extractor</span>
+      </div>
+      <p>&copy; 2026 vtpl. Free, Open Source & Local Processing.</p>
+      <div class="flex items-center gap-4">
+        <a href="#how-it-works" class="hover:text-cyan-400 transition-colors">How It Works</a>
+        <a href="/robots.txt" class="hover:text-cyan-400 transition-colors">Robots</a>
+        <a href="/sitemap.xml" class="hover:text-cyan-400 transition-colors">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script src="config.js"></script>
+  <script>
+    // Configurable backend URL (Vercel rewrites proxy relative URLs by default, or connect directly to Render)
+    let BACKEND_URL = (localStorage.getItem("VTPL_BACKEND_URL") || window.VTPL_BACKEND_URL || "").replace(/\/$/, "");
+
+    function updateBackendStatusUI() {
+      const label = document.getElementById("backend-label");
+      if (BACKEND_URL) {
+        try {
+          const u = new URL(BACKEND_URL);
+          label.innerText = u.hostname;
+        } catch(e) {
+          label.innerText = "Custom API";
+        }
+      } else {
+        label.innerText = "Direct / Rewrites";
+      }
+    }
+    updateBackendStatusUI();
+
+    async function testBackendConnection() {
+      const inputVal = (document.getElementById("backend-url-input").value.trim() || BACKEND_URL || "").replace(/\/$/, "");
+      const resultEl = document.getElementById("api-test-result");
+      const dotEl = document.getElementById("backend-dot");
+      resultEl.classList.remove("hidden");
+      resultEl.className = "text-xs mt-2.5 text-cyan-400 flex items-center gap-1.5";
+      resultEl.innerHTML = `<span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></span> Pinging server... (Render Free spins down after 15m; first wake up takes ~30-50s)`;
+
+      const startTime = Date.now();
+      try {
+        const target = inputVal ? `${inputVal}/healthz` : `/healthz`;
+        const res = await fetch(target, { cache: "no-store" });
+        if (res.ok) {
+          const ms = Date.now() - startTime;
+          resultEl.className = "text-xs mt-2.5 text-emerald-400 font-medium";
+          resultEl.innerHTML = `✓ Connected! Response time: ${(ms / 1000).toFixed(1)}s (Status: Healthy)`;
+          if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-emerald-400";
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (err) {
+        resultEl.className = "text-xs mt-2.5 text-rose-400";
+        resultEl.innerHTML = `✗ Could not connect (${err.message}). If using Render Free, wait 30s while container wakes up, or verify URL.`;
+        if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-rose-400";
+      }
+    }
+
+    function openApiConfigModal() {
+      document.getElementById("backend-url-input").value = BACKEND_URL;
+      const resEl = document.getElementById("api-test-result");
+      if (resEl) resEl.classList.add("hidden");
+      document.getElementById("api-config-modal").classList.remove("hidden");
+    }
+
+    function closeApiConfigModal() {
+      document.getElementById("api-config-modal").classList.add("hidden");
+    }
+
+    function saveBackendConfig() {
+      const val = document.getElementById("backend-url-input").value.trim().replace(/\/$/, "");
+      BACKEND_URL = val;
+      if (val) {
+        localStorage.setItem("VTPL_BACKEND_URL", val);
+      } else {
+        localStorage.removeItem("VTPL_BACKEND_URL");
+      }
+      updateBackendStatusUI();
+      closeApiConfigModal();
+      alert("Backend connection updated!");
+    }
+
+    function clearBackendConfig() {
+      BACKEND_URL = "";
+      localStorage.removeItem("VTPL_BACKEND_URL");
+      document.getElementById("backend-url-input").value = "";
+      updateBackendStatusUI();
+      closeApiConfigModal();
+    }
+
+    const STAGES = [
+      { id: "ingest", label: "Normalize Video & Read Meta" },
+      { id: "frames", label: "Extract Analysis Frame Cache" },
+      { id: "shots", label: "Detect Scene Cuts & Shots" },
+      { id: "motion", label: "Measure Camera Motion & Zooms" },
+      { id: "grade", label: "Profile Color Grade & Luma" },
+      { id: "audio", label: "Analyze BPM & Musical Beat Grid" },
+      { id: "speech", label: "Transcribe Speech (Whisper AI)" },
+      { id: "text", label: "OCR Typography & Animations" },
+      { id: "merge", label: "Compile template.json" }
+    ];
+
+    const COLOR_PRESETS = {
+      cyber: { primary: "#00F0FF", secondary: "#FF007F" },
+      gold: { primary: "#F59E0B", secondary: "#FDE68A" },
+      sunset: { primary: "#F43F5E", secondary: "#FB923C" },
+      emerald: { primary: "#10B981", secondary: "#6EE7B7" },
+      violet: { primary: "#8B5CF6", secondary: "#C084FC" },
+      mono: { primary: "#FFFFFF", secondary: "#94A3B8" }
+    };
+
+    let currentJobId = null;
+    let eventSource = null;
+    let currentTemplate = null;
+    let editedTexts = {};
+
+    function initStagesGrid() {
+      const grid = document.getElementById("stages-grid");
+      grid.innerHTML = STAGES.map((s, idx) => `
+        <div id="stage-card-${s.id}" class="flex items-center justify-between p-2.5 rounded-xl bg-obsidian/70 border border-surfaceBorder text-xs">
+          <div class="flex items-center gap-2 truncate">
+            <span id="stage-icon-${s.id}" class="w-5 h-5 rounded-full bg-surfaceBorder flex items-center justify-center text-slate-400 text-[10px] shrink-0 font-bold">
+              ${idx + 1}
+            </span>
+            <span class="text-slate-300 truncate font-medium">${s.label}</span>
+          </div>
+          <span id="stage-badge-${s.id}" class="text-[10px] uppercase font-bold text-slate-500 shrink-0 ml-2">Pending</span>
+        </div>
+      `).join("");
+      lucide.createIcons();
+    }
+    initStagesGrid();
+
+    // Drag and drop handlers
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("file-input");
+
+    ["dragenter", "dragover"].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropzone.classList.add("border-cyan-400", "bg-cyan-950/20");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("border-cyan-400", "bg-cyan-950/20");
+      });
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        uploadFile(e.target.files[0]);
+      }
+    });
+
+    function showError(msg) {
+      const errBox = document.getElementById("upload-error");
+      const errMsg = document.getElementById("upload-error-msg");
+      if (msg) {
+        errMsg.innerText = msg;
+        errBox.classList.remove("hidden");
+      } else {
+        errBox.classList.add("hidden");
+      }
+    }
+
+    async function uploadFile(file) {
+      showError(null);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      document.getElementById("upload-view").classList.add("hidden");
+      document.getElementById("progress-view").classList.remove("hidden");
+      document.getElementById("progress-message").innerText = `Uploading ${file.name} (${(file.size / (1024*1024)).toFixed(1)} MB)...`;
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/upload`, { method: "POST", body: formData });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Upload failed");
+        }
+        const data = await res.json();
+        currentJobId = data.job_id;
+        startEventStream(currentJobId);
+      } catch (err) {
+        document.getElementById("progress-view").classList.add("hidden");
+        document.getElementById("upload-view").classList.remove("hidden");
+        showError(err.message);
+      }
+    }
+
+    async function loadSample() {
+      showError(null);
+      document.getElementById("upload-view").classList.add("hidden");
+      document.getElementById("progress-view").classList.remove("hidden");
+      document.getElementById("progress-message").innerText = "Loading sample decoded template...";
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/sample`);
+        if (!res.ok) throw new Error("Could not load sample");
+        const data = await res.json();
+        currentJobId = data.job_id;
+        startEventStream(currentJobId);
+      } catch (err) {
+        document.getElementById("progress-view").classList.add("hidden");
+        document.getElementById("upload-view").classList.remove("hidden");
+        showError(err.message);
+      }
+    }
+
+    function startEventStream(jobId) {
+      if (eventSource) eventSource.close();
+      eventSource = new EventSource(`${BACKEND_URL}/api/jobs/${jobId}/events`);
+
+      eventSource.onmessage = (e) => {
+        try {
+          const job = JSON.parse(e.data);
+          updateProgressUI(job);
+        } catch (err) {
+          console.error("SSE parse error", err);
+        }
+      };
+
+      eventSource.onerror = (e) => {
+        setTimeout(() => checkJobStatus(jobId), 2000);
+      };
+    }
+
+    async function checkJobStatus(jobId) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/jobs/${jobId}/status`);
+        if (res.ok) {
+          const job = await res.json();
+          updateProgressUI(job);
+        }
+      } catch (e) {}
+    }
+
+    function updateProgressUI(job) {
+      document.getElementById("progress-bar").style.width = `${Math.max(5, job.progress)}%`;
+      document.getElementById("progress-message").innerText = job.message || "Processing...";
+
+      STAGES.forEach(s => {
+        const st = job.stages_status ? job.stages_status[s.id] : "pending";
+        const badge = document.getElementById(`stage-badge-${s.id}`);
+        const card = document.getElementById(`stage-card-${s.id}`);
+        const icon = document.getElementById(`stage-icon-${s.id}`);
+
+        if (st === "ok") {
+          badge.innerText = "Done";
+          badge.className = "text-[10px] uppercase font-bold text-cyan-400 shrink-0 ml-2";
+          card.className = "flex items-center justify-between p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 text-xs";
+          icon.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-cyan-400"></i>`;
+          icon.className = "w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0";
+        } else if (st === "running") {
+          badge.innerText = "Active";
+          badge.className = "text-[10px] uppercase font-bold text-pink-400 shrink-0 ml-2 animate-pulse";
+          card.className = "flex items-center justify-between p-2.5 rounded-xl bg-pink-950/30 border border-pink-500/40 text-xs";
+          icon.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 text-pink-400 animate-spin"></i>`;
+          icon.className = "w-5 h-5 rounded-full bg-pink-500/20 flex items-center justify-center shrink-0";
+        }
+      });
+      lucide.createIcons();
+
+      if (job.status === "done" && job.template) {
+        if (eventSource) eventSource.close();
+        loadTemplateIntoStudio(job.template);
+      } else if (job.status === "failed") {
+        if (eventSource) eventSource.close();
+        alert(`Analysis error: ${job.error || "Unknown error"}`);
+        resetApp();
+      }
+    }
+
+    function loadTemplateIntoStudio(tmpl) {
+      currentTemplate = JSON.parse(JSON.stringify(tmpl));
+      editedTexts = {};
+      (currentTemplate.texts || []).forEach(t => {
+        editedTexts[t.slot] = {
+          text: t.sample || "",
+          visible: true,
+          color: (t.style && t.style.color) ? t.style.color : "#00F0FF"
+        };
+      });
+
+      document.getElementById("progress-view").classList.add("hidden");
+      document.getElementById("results-view").classList.remove("hidden");
+
+      // Stats
+      document.getElementById("stat-res").innerText = `${tmpl.meta.w}x${tmpl.meta.h}`;
+      document.getElementById("stat-duration").innerText = `${(tmpl.meta.duration_ms / 1000).toFixed(1)}s`;
+      document.getElementById("stat-fps").innerText = `${tmpl.meta.fps} fps`;
+      document.getElementById("stat-bpm").innerText = tmpl.meta.bpm ? `${tmpl.meta.bpm} BPM` : "N/A";
+      document.getElementById("stat-shots").innerText = tmpl.shots ? tmpl.shots.length : 0;
+      document.getElementById("stat-texts").innerText = tmpl.texts ? tmpl.texts.length : 0;
+      document.getElementById("text-items-count").innerText = `${(tmpl.texts || []).length} items`;
+
+      // Render Shots List
+      const shotsList = document.getElementById("shots-list");
+      shotsList.innerHTML = (tmpl.shots || []).map((s, idx) => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-surface border border-surfaceBorder text-xs">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-[10px]">
+              #${idx + 1}
+            </span>
+            <div>
+              <span class="font-bold text-white">${s.slot}</span>
+              <span class="text-slate-400 ml-2">${(s.start_ms / 1000).toFixed(2)}s &rarr; ${(s.end_ms / 1000).toFixed(2)}s</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-obsidian text-cyan-300 font-mono text-[11px] border border-surfaceBorder">
+              ${s.motion ? s.motion.type : 'static'}
+            </span>
+          </div>
+        </div>
+      `).join("");
+
+      renderTextEditor();
+      updateJsonViewer();
+      lucide.createIcons();
+    }
+
+    function renderTextEditor() {
+      const container = document.getElementById("editable-texts-container");
+      container.innerHTML = (currentTemplate.texts || []).map((t, idx) => {
+        const item = editedTexts[t.slot] || { text: t.sample, visible: true, color: "#00F0FF" };
+        return `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-surface border border-surfaceBorder gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="toggleTextVisibility('${t.slot}', this.checked)" title="Show/Hide text overlay" class="w-4 h-4 rounded text-cyan-400 bg-obsidian border-surfaceBorder cursor-pointer">
+              <span class="font-mono text-cyan-400 font-bold text-xs shrink-0">${t.slot}:</span>
+              <input type="text" value="${item.text.replace(/"/g, '&quot;')}" oninput="updateTextValue('${t.slot}', this.value)" class="flex-1 bg-obsidian border border-surfaceBorder rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-cyan-400 font-medium truncate" placeholder="Enter headline text...">
+            </div>
+            <div class="flex items-center gap-2.5 shrink-0 text-xs">
+              <div class="flex items-center gap-1.5 bg-obsidian px-2 py-1 rounded-lg border border-surfaceBorder">
+                <input type="color" value="${item.color}" onchange="updateTextColor('${t.slot}', this.value)" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+                <span class="font-mono text-[10px] text-slate-300">${item.color}</span>
+              </div>
+              <span class="text-slate-400 text-[10px] hidden md:inline">${(t.start_ms/1000).toFixed(1)}s-${(t.end_ms/1000).toFixed(1)}s</span>
+              ${t.style && t.style.font ? `
+                <span class="px-1.5 py-0.5 rounded bg-surfaceBorder text-slate-400 font-mono text-[10px]">${t.style.font}</span>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateTextValue(slot, val) {
+      if (!editedTexts[slot]) editedTexts[slot] = {};
+      editedTexts[slot].text = val;
+      const t = currentTemplate.texts.find(x => x.slot === slot);
+      if (t) t.sample = val;
+      updateJsonViewer();
+    }
+
+    function updateTextColor(slot, color) {
+      if (!editedTexts[slot]) editedTexts[slot] = {};
+      editedTexts[slot].color = color;
+      const t = currentTemplate.texts.find(x => x.slot === slot);
+      if (t) {
+        if (!t.style) t.style = {};
+        t.style.color = color;
+      }
+      renderTextEditor();
+      updateJsonViewer();
+    }
+
+    function toggleTextVisibility(slot, isVisible) {
+      if (!editedTexts[slot]) editedTexts[slot] = {};
+      editedTexts[slot].visible = isVisible;
+      updateJsonViewer();
+    }
+
+    function applyPalettePreset(name) {
+      const p = COLOR_PRESETS[name];
+      if (!p || !currentTemplate || !currentTemplate.texts) return;
+
+      currentTemplate.texts.forEach((t, idx) => {
+        const chosenColor = (idx % 2 === 0) ? p.primary : p.secondary;
+        if (!editedTexts[t.slot]) editedTexts[t.slot] = {};
+        editedTexts[t.slot].color = chosenColor;
+        if (!t.style) t.style = {};
+        t.style.color = chosenColor;
+      });
+
+      renderTextEditor();
+      updateJsonViewer();
+    }
+
+    function applyCustomPalette() {
+      const primary = document.getElementById("custom-color-primary").value;
+      const secondary = document.getElementById("custom-color-secondary").value;
+      if (!currentTemplate || !currentTemplate.texts) return;
+
+      currentTemplate.texts.forEach((t, idx) => {
+        const chosenColor = (idx % 2 === 0) ? primary : secondary;
+        if (!editedTexts[t.slot]) editedTexts[t.slot] = {};
+        editedTexts[t.slot].color = chosenColor;
+        if (!t.style) t.style = {};
+        t.style.color = chosenColor;
+      });
+
+      renderTextEditor();
+      updateJsonViewer();
+    }
+
+    function updateJsonViewer() {
+      document.getElementById("json-viewer").innerText = JSON.stringify(currentTemplate, null, 2);
+    }
+
+    function downloadModifiedTemplate() {
+      if (!currentTemplate) return;
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentTemplate, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "template.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    async function downloadTextsYaml() {
+      if (!currentTemplate || !currentTemplate.texts) return;
+      const textsPayload = {};
+      currentTemplate.texts.forEach(t => {
+        const item = editedTexts[t.slot];
+        if (!item || !item.visible) {
+          textsPayload[t.slot] = "";
+        } else {
+          textsPayload[t.slot] = item.text || t.sample || "";
+        }
+      });
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/template/yaml`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texts: textsPayload })
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "texts.yaml";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        alert("Failed to export texts.yaml");
+      }
+    }
+
+    // 1-Click Online Render to MP4
+    async function renderVideoOnline() {
+      if (!currentTemplate) return;
+      
+      document.getElementById("render-modal").classList.remove("hidden");
+      document.getElementById("render-loading-state").classList.remove("hidden");
+      document.getElementById("render-result-state").classList.add("hidden");
+
+      const textsPayload = {};
+      currentTemplate.texts.forEach(t => {
+        const item = editedTexts[t.slot];
+        if (!item || !item.visible) {
+          textsPayload[t.slot] = "";
+        } else {
+          textsPayload[t.slot] = item.text || t.sample || "";
+        }
+      });
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/render`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            template: currentTemplate,
+            texts: textsPayload,
+            job_id: currentJobId
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Rendering failed");
+        }
+
+        const data = await res.json();
+        document.getElementById("render-loading-state").classList.add("hidden");
+        document.getElementById("render-result-state").classList.remove("hidden");
+        
+        const player = document.getElementById("rendered-video-player");
+        player.src = `${BACKEND_URL}${data.video_url}`;
+        player.load();
+        player.play().catch(e => console.log(e));
+
+        const dlBtn = document.getElementById("download-rendered-btn");
+        dlBtn.href = `${BACKEND_URL}${data.download_url}`;
+      } catch (err) {
+        alert("Rendering error: " + err.message);
+        closeRenderModal();
+      }
+    }
+
+    function closeRenderModal() {
+      document.getElementById("render-modal").classList.add("hidden");
+      const player = document.getElementById("rendered-video-player");
+      player.pause();
+      player.src = "";
+    }
+
+    function copyCliCommand() {
+      const cmd = document.getElementById("cli-cmd-display").innerText;
+      navigator.clipboard.writeText(cmd);
+      alert("Render command copied to clipboard!");
+    }
+
+    // Modal logic
+    function openDecodeModal() {
+      document.getElementById("decode-modal").classList.remove("hidden");
+    }
+
+    function closeDecodeModal() {
+      document.getElementById("decode-modal").classList.add("hidden");
+      document.getElementById("decode-json-input").value = "";
+    }
+
+    async function submitDecodedJson() {
+      const raw = document.getElementById("decode-json-input").value.trim();
+      if (!raw) return alert("Please paste valid JSON template.");
+      try {
+        const parsed = JSON.parse(raw);
+        const res = await fetch(`${BACKEND_URL}/api/template/decode`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ template: parsed })
+        });
+        if (!res.ok) throw new Error("Invalid template structure");
+        const data = await res.json();
+        closeDecodeModal();
+        document.getElementById("upload-view").classList.add("hidden");
+        loadTemplateIntoStudio(data.template);
+      } catch (err) {
+        alert("Error parsing JSON: " + err.message);
+      }
+    }
+
+    function resetApp() {
+      currentJobId = null;
+      currentTemplate = null;
+      editedTexts = {};
+      if (eventSource) eventSource.close();
+      document.getElementById("file-input").value = "";
+      document.getElementById("results-view").classList.add("hidden");
+      document.getElementById("progress-view").classList.add("hidden");
+      document.getElementById("upload-view").classList.remove("hidden");
+      initStagesGrid();
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
