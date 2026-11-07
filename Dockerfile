@@ -25,9 +25,9 @@ RUN pip install --no-cache-dir -e '.[dev]' \
     python-multipart \
     jinja2
 
-# Pre-download the Whisper model so first user analysis is fast
-ENV VTPL_WHISPER_MODEL=small
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"
+# Pre-download the default Whisper model so first user analysis is fast and memory-efficient
+ENV VTPL_WHISPER_MODEL=tiny
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('tiny', device='cpu', compute_type='int8')"
 
 # Create work directory
 RUN mkdir -p /app/work
