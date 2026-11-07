@@ -27,7 +27,7 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 AD_CLIENT_ID = os.environ.get("AD_CLIENT_ID", "")
 CANONICAL_URL = os.environ.get("CANONICAL_URL", "https://vtpl.app")
-MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "100"))
+MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "50"))
 
 app = FastAPI(
     title="Video Template Extractor",
@@ -217,30 +217,59 @@ async def healthz():
 
 
 @app.post("/api/upload")
-async def upload_video(file: UploadFile = File(...)):
+async def upload_video(request: Request, file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file selected")
 
     ext = Path(file.filename).suffix.lower()
     if ext not in [".mp4", ".mov", ".m4v", ".webm", ".mkv"]:
-        raise HTTPException(status_code=400, detail=f"Unsupported video format: {ext}. Use .mp4 or .mov.")
+        raise HTTPException(status_code=400, detail=f"Unsupported video format: {ext}. Use .mp4, .mov, or .webm.")
+
+    max_bytes = MAX_UPLOAD_MB * 1024 * 1024
+
+    # 1. Early rejection via Content-Length header to block massive uploads (e.g. 1000MB) before transfer
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            cl = int(content_length)
+            if cl > max_bytes:
+                mb_received = cl / (1024 * 1024)
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File exceeds maximum allowed size of {MAX_UPLOAD_MB}MB (attempted {mb_received:.1f}MB)."
+                )
+        except ValueError:
+            pass
 
     job_id = uuid.uuid4().hex[:12]
     job_dir = UPLOADS_DIR / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
     target_path = job_dir / f"source{ext}"
 
-    # Stream write with size limit
+    # 2. Stream write with strict chunked size enforcement
     size = 0
-    max_bytes = MAX_UPLOAD_MB * 1024 * 1024
-    with open(target_path, "wb") as buffer:
-        while chunk := await file.read(1024 * 1024):
-            size += len(chunk)
-            if size > max_bytes:
-                buffer.close()
-                target_path.unlink(missing_ok=True)
-                raise HTTPException(status_code=413, detail=f"File exceeds maximum allowed size ({MAX_UPLOAD_MB}MB)")
-            buffer.write(chunk)
+    try:
+        with open(target_path, "wb") as buffer:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > max_bytes:
+                    buffer.close()
+                    target_path.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File exceeds maximum allowed size ({MAX_UPLOAD_MB}MB)."
+                    )
+                buffer.write(chunk)
+    except HTTPException:
+        target_path.unlink(missing_ok=True)
+        raise
+    except Exception as e:
+        target_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=f"Upload processing failed: {str(e)}")
+
+    if size == 0:
+        target_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Uploaded file is empty (0 bytes).")
 
     init_stages = {s["name"]: "pending" for s in STAGE_META}
     jobs[job_id] = {

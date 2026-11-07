@@ -166,9 +166,13 @@
           </div>
           
           <h3 class="text-xl font-bold text-white mb-1.5">Drop your Reel, Short or TikTok video</h3>
-          <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6">
-            Supports MP4, MOV, WEBM (up to 50MB on free plan). Runs automated cut detection, beat tracking, and OCR typography extraction.
+          <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-3">
+            Supports MP4, MOV, WEBM. Runs automated cut detection, beat tracking, and OCR typography extraction.
           </p>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-xs font-semibold mb-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span>Max File Size: 50 MB (Free Tier Optimized)</span>
+          </div>
 
           <div class="flex flex-wrap items-center justify-center gap-3">
             <button type="button" onclick="document.getElementById('file-input').click()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-bold text-sm shadow-lg shadow-cyan-400/25 transition-all">
@@ -189,9 +193,12 @@
           </div>
         </div>
 
-        <div id="upload-error" class="hidden mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-center gap-2">
-          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-          <span id="upload-error-msg"></span>
+        <div id="upload-error" class="hidden mt-4 p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-sm flex items-start gap-2.5">
+          <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-rose-400 mt-0.5"></i>
+          <div>
+            <div class="font-bold text-rose-200">Validation Error</div>
+            <span id="upload-error-msg"></span>
+          </div>
         </div>
       </section>
 
@@ -712,12 +719,40 @@
       }
     });
 
+    const MAX_UPLOAD_MB = 50;
+    const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+    const ALLOWED_VIDEO_EXTS = [".mp4", ".mov", ".m4v", ".webm", ".mkv"];
+
+    function validateVideoFile(file) {
+      if (!file) {
+        return "No file selected. Please choose a video file.";
+      }
+
+      const name = (file.name || "").toLowerCase();
+      const hasValidExt = ALLOWED_VIDEO_EXTS.some(ext => name.endsWith(ext));
+      if (!hasValidExt) {
+        return `Unsupported format for "${file.name}". Please upload a supported video file (${ALLOWED_VIDEO_EXTS.join(", ")}).`;
+      }
+
+      if (file.size === 0) {
+        return "The selected video file is empty (0 bytes). Please select a valid video.";
+      }
+
+      if (file.size > MAX_UPLOAD_BYTES) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        return `File size (${sizeMb} MB) exceeds the maximum limit of ${MAX_UPLOAD_MB} MB. Please upload a shorter reel or compress the file before uploading.`;
+      }
+
+      return null;
+    }
+
     function showError(msg) {
       const errBox = document.getElementById("upload-error");
       const errMsg = document.getElementById("upload-error-msg");
       if (msg) {
         errMsg.innerText = msg;
         errBox.classList.remove("hidden");
+        lucide.createIcons();
       } else {
         errBox.classList.add("hidden");
       }
@@ -725,6 +760,16 @@
 
     async function uploadFile(file) {
       showError(null);
+
+      // Instant Frontend Validation before initiating network upload
+      const validationError = validateVideoFile(file);
+      if (validationError) {
+        showError(validationError);
+        const input = document.getElementById("file-input");
+        if (input) input.value = "";
+        return;
+      }
+
       const formData = new FormData();
       formData.append("file", file);
 

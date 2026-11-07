@@ -628,12 +628,40 @@
       }
     });
 
+    const MAX_UPLOAD_MB = {{ max_upload_mb | default(50) }};
+    const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+    const ALLOWED_VIDEO_EXTS = [".mp4", ".mov", ".m4v", ".webm", ".mkv"];
+
+    function validateVideoFile(file) {
+      if (!file) {
+        return "No file selected. Please choose a video file.";
+      }
+
+      const name = (file.name || "").toLowerCase();
+      const hasValidExt = ALLOWED_VIDEO_EXTS.some(ext => name.endsWith(ext));
+      if (!hasValidExt) {
+        return `Unsupported format for "${file.name}". Please upload a supported video file (${ALLOWED_VIDEO_EXTS.join(", ")}).`;
+      }
+
+      if (file.size === 0) {
+        return "The selected video file is empty (0 bytes). Please select a valid video.";
+      }
+
+      if (file.size > MAX_UPLOAD_BYTES) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        return `File size (${sizeMb} MB) exceeds the maximum limit of ${MAX_UPLOAD_MB} MB. Please upload a shorter reel or compress the file before uploading.`;
+      }
+
+      return null;
+    }
+
     function showError(msg) {
       const errBox = document.getElementById("upload-error");
       const errMsg = document.getElementById("upload-error-msg");
       if (msg) {
         errMsg.innerText = msg;
         errBox.classList.remove("hidden");
+        lucide.createIcons();
       } else {
         errBox.classList.add("hidden");
       }
@@ -641,6 +669,16 @@
 
     async function uploadFile(file) {
       showError(null);
+
+      // Instant Frontend Validation before initiating network upload
+      const validationError = validateVideoFile(file);
+      if (validationError) {
+        showError(validationError);
+        const input = document.getElementById("file-input");
+        if (input) input.value = "";
+        return;
+      }
+
       const formData = new FormData();
       formData.append("file", file);
 
