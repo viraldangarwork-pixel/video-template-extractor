@@ -114,3 +114,66 @@ This repository includes `Dockerfile`, `railway.json`, and `render.yaml`.
    * `AD_CLIENT_ID`: Your Google AdSense publisher ID
    * `CANONICAL_URL`: Your production domain (e.g. `https://my-vtpl-app.com`)
    * `VTPL_WHISPER_MODEL`: `small` or `tiny` (default `small`)
+
+
+---
+
+## Python Package / SDK Usage
+
+You can also import and use `vtpl` as a Python library in your own scripts, backends, or AI workflows.
+
+### Install as a Package
+
+```bash
+# Install directly from GitHub:
+pip install "git+https://github.com/viraldangarwork-pixel/video-template-extractor.git"
+
+# Or with Web Studio support:
+pip install "vtpl[web] @ git+https://github.com/viraldangarwork-pixel/video-template-extractor.git"
+```
+
+### Python SDK Quickstart
+
+```python
+import vtpl
+
+# 1. Analyze a video and extract template dictionary
+template = vtpl.analyze("reel.mp4", out_dir="work")
+
+print("Video BPM:", template["meta"]["bpm"])
+print("Shots detected:", len(template["shots"]))
+for text in template.get("texts", []):
+    print(f"[{text['slot']}] {text['sample']} (Font: {text['style']['font']})")
+
+# 2. Modify template text or colors programmatically
+template["texts"][0]["sample"] = "MY CUSTOM HEADLINE"
+template["texts"][0]["style"]["color"] = "#00F0FF"
+
+# 3. Render a new video with your clips & music
+warnings = vtpl.render(
+    template,
+    media="./mine",           # folder with clip_1.mp4, music.mp3, etc.
+    out="rendered_reel.mp4",
+    snap_to_beats=True        # sync cuts to music beats
+)
+
+# 4. Save and load template files
+vtpl.save_template(template, "my_template.json")
+loaded_tmpl = vtpl.load_template("my_template.json")
+
+# 5. Launch the Web Studio programmatically
+vtpl.serve(host="127.0.0.1", port=8000)
+```
+
+### Building Distribution Wheels (for PyPI)
+
+```bash
+# Build .whl and .tar.gz
+pip install build
+python -m build
+
+# Output wheels will be in dist/
+# Publish to PyPI with twine:
+pip install twine
+twine upload dist/*
+```

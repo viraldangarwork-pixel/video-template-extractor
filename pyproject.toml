@@ -1,11 +1,38 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "vtpl"
 version = "0.1.0"
-description = "Reverse-engineer short-form videos into editable templates and re-render them."
+description = "Reverse-engineer short-form videos (Reels, TikTok, Shorts) into editable templates and re-render them."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Viral Dangar", email = "viraldangar.work@gmail.com" }
+]
+keywords = [
+  "video",
+  "template",
+  "reels",
+  "shorts",
+  "tiktok",
+  "ffmpeg",
+  "whisper",
+  "ocr",
+  "computer-vision",
+  "beat-tracking"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Multimedia :: Video",
+  "Topic :: Multimedia :: Sound/Audio :: Analysis",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
+]
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=1.26",
@@ -19,17 +46,35 @@ dependencies = [
   "typer>=0.12",
   "rapidocr-onnxruntime>=1.2.3",
   "rapidfuzz>=3.0",
-  "Pillow>=10.0",
+  "Pillow>=10.0"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "fonttools>=4.40"]
+dev = [
+  "pytest>=8",
+  "fonttools>=4.40",
+  "build>=1.0"
+]
 web = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.28",
   "python-multipart>=0.0.9",
   "jinja2>=3.1"
 ]
+all = [
+  "pytest>=8",
+  "fonttools>=4.40",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.28",
+  "python-multipart>=0.0.9",
+  "jinja2>=3.1"
+]
+
+[project.urls]
+Homepage = "https://github.com/viraldangarwork-pixel/video-template-extractor"
+Repository = "https://github.com/viraldangarwork-pixel/video-template-extractor.git"
+Documentation = "https://github.com/viraldangarwork-pixel/video-template-extractor#readme"
+Issues = "https://github.com/viraldangarwork-pixel/video-template-extractor/issues"
 
 [project.scripts]
 vtpl = "vtpl.cli:app"
