@@ -82,21 +82,30 @@ To protect the server against large file uploads (e.g. 100MB or 1,000MB files th
 
 ---
 
-## Step 3: Link Frontend to Backend
+## Step 3: Link Frontend to Backend via Environment Variable (.env)
 
 Choose any of the following methods:
 
-- **Method A (Interactive UI)**: Click the **"Backend API"** button in the top navigation bar of your live Vercel site. Paste your Render backend URL, click **"Test Ping"** to verify connection, and click **"Save Connection"**.
-- **Method B (`frontend/config.js`)**: Open `frontend/config.js` and set:
-  ```javascript
-  window.VTPL_BACKEND_URL = "https://vtpl-backend.onrender.com";
+- **Method A (Vercel Environment Variable - Recommended)**:
+  1. In Vercel, go to your project $\to$ **Settings** $\to$ **Environment Variables**.
+  2. Add:
+     - **Key**: `VTPL_BACKEND_URL`
+     - **Value**: `https://vtpl-backend.onrender.com` *(your live Render backend URL)*
+  3. Redeploy. Vercel's build step automatically injects this into `config.js`!
+
+- **Method B (Local or File-based `.env`)**:
+  Create `frontend/.env`:
+  ```env
+  VTPL_BACKEND_URL=https://vtpl-backend.onrender.com
   ```
-- **Method C (`vercel.json` rewrites)**: In `vercel.json`, set your Render URL under `rewrites` to proxy `/api/*` requests.
+  Run `npm run build` (or `node build.js`) in `frontend/`.
+
+- **Method C (Direct `frontend/config.js` or `vercel.json` rewrites)**:
+  You can set `window.VTPL_BACKEND_URL = "https://vtpl-backend.onrender.com";` directly in `frontend/config.js` or let `vercel.json` rewrites proxy `/api/*` calls.
 
 ---
 
 ## Render Free Tier Sleeping & Keep-Awake
 
 - Render free tier instances sleep after 15 minutes of inactivity. First wake-up takes ~30–50s.
-- The web studio features an integrated **"Test Ping"** modal showing connection status and wake-up progress.
-- To prevent cold starts, you can set up a free uptime monitor (e.g., [UptimeRobot](https://uptimerobot.com)) to ping `https://<your-service>.onrender.com/healthz` every 10 minutes.
+- To prevent cold starts, you can set up a free uptime monitor (e.g., [UptimeRobot](https://uptimerobot.com)) to ping `https://<your-service>.onrender.com/healthz` (supports both `GET` and `HEAD` methods) every 10 minutes.
