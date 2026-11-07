@@ -113,7 +113,11 @@ This repository includes `Dockerfile`, `railway.json`, and `render.yaml`.
 4. Set optional environment variables:
    * `AD_CLIENT_ID`: Your Google AdSense publisher ID
    * `CANONICAL_URL`: Your production domain (e.g. `https://my-vtpl-app.com`)
-   * `VTPL_WHISPER_MODEL`: `small` or `tiny` (default `small`)
+   * `VTPL_WHISPER_MODEL`: `tiny` (default for 512MB RAM free plan)
+
+#### Option 3: 100% Free Decoupled Hosting (Frontend on Vercel + Backend on Render)
+Deploy the static studio to **Vercel Edge CDN** and the Docker processing engine to **Render Free Tier** with 50MB upload validation:
+* See full step-by-step instructions in [docs/DEPLOYMENT_VERCEL_RENDER.md](docs/DEPLOYMENT_VERCEL_RENDER.md).
 
 
 ---
