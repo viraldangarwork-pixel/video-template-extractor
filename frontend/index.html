@@ -106,13 +106,6 @@
       </a>
 
       <div class="flex items-center gap-2.5">
-        <!-- Backend API Server Status / Config -->
-        <button onclick="openApiConfigModal()" id="backend-status-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surfaceBorder border border-surfaceBorder text-slate-300 text-xs font-medium transition-all" title="Click to configure Render Backend URL">
-          <span id="backend-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="backend-label" class="hidden sm:inline">Backend API</span>
-          <i data-lucide="settings" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
-        </button>
-
         <button onclick="openDecodeModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface hover:bg-surfaceBorder text-cyan-400 border border-cyan-500/30 text-xs font-semibold hover:border-cyan-400 transition-all shadow-sm">
           <i data-lucide="file-json" class="w-3.5 h-3.5"></i> Decode JSON
         </button>
@@ -521,35 +514,6 @@
     </div>
   </div>
 
-  <!-- API BACKEND CONFIG MODAL -->
-  <div id="api-config-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-surface border border-cyan-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="server" class="w-5 h-5 text-cyan-400"></i> Backend API Connection
-        </h3>
-        <button onclick="closeApiConfigModal()" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <p class="text-xs text-slate-400 mb-4">
-        Connect to your Render backend (e.g. <code class="text-cyan-300">https://your-app.onrender.com</code>). Leave empty if using Vercel rewrites or local server.
-      </p>
-      <div class="mb-4">
-        <label class="block text-xs font-medium text-slate-300 mb-1">Backend URL:</label>
-        <div class="flex gap-2">
-          <input type="url" id="backend-url-input" placeholder="https://video-template-extractor.onrender.com" class="flex-1 bg-obsidian border border-surfaceBorder rounded-xl px-3 py-2 text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 font-mono">
-          <button type="button" onclick="testBackendConnection()" class="px-3 py-2 rounded-xl bg-surfaceBorder hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 text-xs font-medium border border-cyan-500/30 whitespace-nowrap">Test Ping</button>
-        </div>
-        <div id="api-test-result" class="hidden text-xs mt-2.5"></div>
-      </div>
-      <div class="flex items-center justify-end gap-2">
-        <button onclick="clearBackendConfig()" class="px-3.5 py-2 rounded-xl bg-surfaceBorder text-slate-400 hover:text-slate-200 text-xs">Reset to Default</button>
-        <button onclick="saveBackendConfig()" class="px-5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black text-xs font-bold">Save Connection</button>
-      </div>
-    </div>
-  </div>
-
   <!-- FOOTER -->
   <footer class="border-t border-surfaceBorder bg-obsidian py-6 text-center text-xs text-slate-500">
     <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -569,82 +533,9 @@
   <!-- SCRIPT LOGIC -->
   <script src="config.js"></script>
   <script>
-    // Configurable backend URL (Vercel rewrites proxy relative URLs by default, or connect directly to Render)
-    let BACKEND_URL = (localStorage.getItem("VTPL_BACKEND_URL") || window.VTPL_BACKEND_URL || "").replace(/\/$/, "");
-
-    function updateBackendStatusUI() {
-      const label = document.getElementById("backend-label");
-      if (BACKEND_URL) {
-        try {
-          const u = new URL(BACKEND_URL);
-          label.innerText = u.hostname;
-        } catch(e) {
-          label.innerText = "Custom API";
-        }
-      } else {
-        label.innerText = "Direct / Rewrites";
-      }
-    }
-    updateBackendStatusUI();
-
-    async function testBackendConnection() {
-      const inputVal = (document.getElementById("backend-url-input").value.trim() || BACKEND_URL || "").replace(/\/$/, "");
-      const resultEl = document.getElementById("api-test-result");
-      const dotEl = document.getElementById("backend-dot");
-      resultEl.classList.remove("hidden");
-      resultEl.className = "text-xs mt-2.5 text-cyan-400 flex items-center gap-1.5";
-      resultEl.innerHTML = `<span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></span> Pinging server... (Render Free spins down after 15m; first wake up takes ~30-50s)`;
-
-      const startTime = Date.now();
-      try {
-        const target = inputVal ? `${inputVal}/healthz` : `/healthz`;
-        const res = await fetch(target, { cache: "no-store" });
-        if (res.ok) {
-          const ms = Date.now() - startTime;
-          resultEl.className = "text-xs mt-2.5 text-emerald-400 font-medium";
-          resultEl.innerHTML = `✓ Connected! Response time: ${(ms / 1000).toFixed(1)}s (Status: Healthy)`;
-          if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-emerald-400";
-        } else {
-          throw new Error(`HTTP ${res.status}`);
-        }
-      } catch (err) {
-        resultEl.className = "text-xs mt-2.5 text-rose-400";
-        resultEl.innerHTML = `✗ Could not connect (${err.message}). If using Render Free, wait 30s while container wakes up, or verify URL.`;
-        if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-rose-400";
-      }
-    }
-
-    function openApiConfigModal() {
-      document.getElementById("backend-url-input").value = BACKEND_URL;
-      const resEl = document.getElementById("api-test-result");
-      if (resEl) resEl.classList.add("hidden");
-      document.getElementById("api-config-modal").classList.remove("hidden");
-    }
-
-    function closeApiConfigModal() {
-      document.getElementById("api-config-modal").classList.add("hidden");
-    }
-
-    function saveBackendConfig() {
-      const val = document.getElementById("backend-url-input").value.trim().replace(/\/$/, "");
-      BACKEND_URL = val;
-      if (val) {
-        localStorage.setItem("VTPL_BACKEND_URL", val);
-      } else {
-        localStorage.removeItem("VTPL_BACKEND_URL");
-      }
-      updateBackendStatusUI();
-      closeApiConfigModal();
-      alert("Backend connection updated!");
-    }
-
-    function clearBackendConfig() {
-      BACKEND_URL = "";
-      localStorage.removeItem("VTPL_BACKEND_URL");
-      document.getElementById("backend-url-input").value = "";
-      updateBackendStatusUI();
-      closeApiConfigModal();
-    }
+    // Backend API URL: configured via config.js (window.VTPL_BACKEND_URL) or .env
+    // Empty string ("") defaults to relative paths proxied by Vercel rewrites (/api/...)
+    const BACKEND_URL = (window.VTPL_BACKEND_URL || localStorage.getItem("VTPL_BACKEND_URL") || "").replace(/\/$/, "");
 
     const STAGES = [
       { id: "ingest", label: "Normalize Video & Read Meta" },
